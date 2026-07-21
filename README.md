@@ -24,7 +24,7 @@
 
 ## Quick Start
 
-1. **Download** the latest APK from [Actions](https://github.com/MCwasd/deepseek-mobile-desktop-widget/actions)
+1. **Download** the latest APK from [Releases](https://github.com/MCwasd/deepseek-widget-new/releases)
 2. **Install** on Android 8.0+
 3. **Long press** home screen → **Widgets** → find **DeepSeek Dashboard**
 4. **Enter** your DeepSeek API Key
@@ -49,8 +49,8 @@
 ## Build from Source
 
 ```bash
-git clone https://github.com/MCwasd/deepseek-mobile-desktop-widget.git
-cd deepseek-mobile-desktop-widget/android
+git clone https://github.com/MCwasd/deepseek-widget-new.git
+cd deepseek-widget-new
 ./gradlew assembleRelease
 # APK: app/build/outputs/apk/release/
 ```
@@ -84,7 +84,7 @@ MIT
 
 ### 快速开始
 
-1. 从 [Actions](https://github.com/MCwasd/deepseek-mobile-desktop-widget/actions) 下载最新 APK
+1. 从 [Releases](https://github.com/MCwasd/deepseek-widget-new/releases) 下载最新 APK
 2. 安装到 Android 8.0+ 手机
 3. 长按桌面空白处 → 添加小组件 → **DeepSeek 仪表盘**
 4. 输入你的 DeepSeek API Key
@@ -95,9 +95,9 @@ MIT
 ### 自行编译
 
 ```bash
-git clone https://github.com/MCwasd/deepseek-mobile-desktop-widget.git
-cd deepseek-mobile-desktop-widget/android
-./gradlew assembleRelease
+git clone https://github.com/MCwasd/deepseek-widget-new.git
+cd deepseek-widget-new
+./gradlew assembleDebug
 # APK 在 app/build/outputs/apk/release/
 ```
 
