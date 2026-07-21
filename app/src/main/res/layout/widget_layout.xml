@@ -3,20 +3,44 @@
     android:id="@+id/widget_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:gravity="center"
     android:orientation="vertical"
     android:padding="16dp"
     android:background="@drawable/widget_bg">
 
-    <TextView
-        android:id="@+id/tv_balance"
-        android:layout_width="wrap_content"
+    <!-- ═══════════ 上半区：常驻 ─══════════ -->
+    <LinearLayout
+        android:id="@+id/top_section"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="¥0.00"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:textColor="#1A73E8"
-        android:lines="1"
-        android:ellipsize="end" />
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tv_balance"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="¥0.00"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:textColor="@color/balance_text"
+            android:lines="1"
+            android:ellipsize="end" />
+
+    </LinearLayout>
+
+    <!-- 分隔线 -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/divider_color"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="10dp" />
+
+    <!-- ═══════════ 下半区：切换页（待实现） ─══════════ -->
+    <LinearLayout
+        android:id="@+id/bottom_section"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:minHeight="40dp" />
 
 </LinearLayout>
