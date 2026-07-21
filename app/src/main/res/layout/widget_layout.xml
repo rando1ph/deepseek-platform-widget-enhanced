@@ -49,15 +49,15 @@
             android:layout_marginTop="6dp">
             <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="start" android:gravity="center_horizontal" android:orientation="vertical">
                 <TextView android:id="@+id/tv_balance_value" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="¥0.00" android:textSize="22sp" android:textStyle="bold" android:textColor="#5C78E8" />
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="余 额" android:textSize="10sp" android:textColor="#687386" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="余  额" android:textSize="10sp" android:textColor="#687386" />
             </LinearLayout>
             <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:gravity="center_horizontal" android:orientation="vertical">
                 <TextView android:id="@+id/tv_today_value" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="¥0" android:textSize="22sp" android:textStyle="bold" android:textColor="#5C78E8" />
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="今日" android:textSize="10sp" android:textColor="#687386" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="今  日" android:textSize="10sp" android:textColor="#687386" />
             </LinearLayout>
             <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="end" android:gravity="center_horizontal" android:orientation="vertical">
                 <TextView android:id="@+id/tv_month_value" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="¥0" android:textSize="22sp" android:textStyle="bold" android:textColor="#5C78E8" />
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="本月" android:textSize="10sp" android:textColor="#687386" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="本  月" android:textSize="10sp" android:textColor="#687386" />
             </LinearLayout>
             <!-- Kept for compatibility with the renderer; not visible. -->
             <TextView android:id="@+id/tv_balance" android:layout_width="1dp" android:layout_height="1dp" android:textColor="@android:color/transparent" />
@@ -74,17 +74,26 @@
         android:layout_height="96dp"
         android:orientation="vertical">
         <TextView android:id="@+id/tv_model" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Flash ›" android:textSize="13sp" android:textStyle="bold" android:textColor="#4D6BFE" />
-        <FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp">
-            <TextView android:id="@+id/tv_tokens" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="start" android:text="0" android:textSize="14sp" android:textStyle="bold" android:textColor="#5C78E8" />
-            <TextView android:id="@+id/tv_requests" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="start" android:layout_marginStart="70dp" android:text="0" android:textSize="14sp" android:textStyle="bold" android:textColor="#5C78E8" />
-            <TextView android:id="@+id/tv_cache" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="start" android:layout_marginStart="150dp" android:text="--" android:textSize="14sp" android:textStyle="bold" android:textColor="#198754" />
-            <TextView android:id="@+id/tv_model_cost" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="end" android:text="¥0" android:textSize="14sp" android:textStyle="bold" android:textColor="#D39B2C" />
-        </FrameLayout>
-        <FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content">
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="start" android:text="Token" android:textSize="9sp" android:textColor="#687386" />
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="start" android:layout_marginStart="70dp" android:text="Requests" android:textSize="9sp" android:textColor="#687386" />
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="start" android:layout_marginStart="150dp" android:text="Cache" android:textSize="9sp" android:textColor="#687386" />
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="end" android:text="Cost" android:textSize="9sp" android:textColor="#687386" />
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp">
+            <LinearLayout android:layout_width="54dp" android:layout_height="wrap_content" android:gravity="center_horizontal" android:orientation="vertical">
+                <TextView android:id="@+id/tv_tokens" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textSize="14sp" android:textStyle="bold" android:textColor="#5C78E8" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Token" android:textSize="9sp" android:textColor="#687386" />
+            </LinearLayout>
+            <LinearLayout android:layout_width="54dp" android:layout_height="wrap_content" android:layout_marginStart="54dp" android:gravity="center_horizontal" android:orientation="vertical">
+                <TextView android:id="@+id/tv_requests" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textSize="14sp" android:textStyle="bold" android:textColor="#5C78E8" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Requests" android:textSize="9sp" android:textColor="#687386" />
+            </LinearLayout>
+            <LinearLayout android:layout_width="54dp" android:layout_height="wrap_content" android:layout_marginStart="108dp" android:gravity="center_horizontal" android:orientation="vertical">
+                <TextView android:id="@+id/tv_cache" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="--" android:textSize="14sp" android:textStyle="bold" android:textColor="#198754" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Cache" android:textSize="9sp" android:textColor="#687386" />
+            </LinearLayout>
+            <LinearLayout android:layout_width="54dp" android:layout_height="wrap_content" android:layout_marginStart="162dp" android:gravity="center_horizontal" android:orientation="vertical">
+                <TextView android:id="@+id/tv_model_cost" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="¥0" android:textSize="14sp" android:textStyle="bold" android:textColor="#D39B2C" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Cost" android:textSize="9sp" android:textColor="#687386" />
+            </LinearLayout>
         </FrameLayout>
     </LinearLayout>
 </LinearLayout>
