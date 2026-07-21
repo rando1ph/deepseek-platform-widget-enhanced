@@ -9,6 +9,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 import java.util.concurrent.TimeUnit
 
 class DeepSeekApiClient(private val token: String) {
@@ -22,7 +23,11 @@ class DeepSeekApiClient(private val token: String) {
     }
 
     private val gson = Gson()
-    private val cal = Calendar.getInstance()
+    // DeepSeek usage day boundaries follow UTC. Using the device timezone makes
+    // phones in GMT+8 query tomorrow's empty row between 00:00 and 08:00,
+    // while an UTC emulator still displays the expected data.
+    private val usageTimeZone = TimeZone.getTimeZone("UTC")
+    private val cal = Calendar.getInstance(usageTimeZone)
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
@@ -117,7 +122,9 @@ class DeepSeekApiClient(private val token: String) {
     private fun fetchTodayUsage(): TodayUsageResult {
         val month = String.format("%02d", cal.get(Calendar.MONTH) + 1)
         val year = cal.get(Calendar.YEAR).toString()
-        val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+        val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).apply {
+            timeZone = usageTimeZone
+        }.format(Date())
 
         var flashUsage = TokenBreakdown()
         var proUsage = TokenBreakdown()
