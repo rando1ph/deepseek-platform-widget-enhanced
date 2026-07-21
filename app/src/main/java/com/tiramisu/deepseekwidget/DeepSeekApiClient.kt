@@ -9,6 +9,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 import java.util.concurrent.TimeUnit
 
 class DeepSeekApiClient(private val token: String) {
@@ -22,7 +23,8 @@ class DeepSeekApiClient(private val token: String) {
     }
 
     private val gson = Gson()
-    private val cal = Calendar.getInstance()
+    private val usageTimeZone = TimeZone.getTimeZone("UTC")
+    private val cal = Calendar.getInstance(usageTimeZone)
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
@@ -103,7 +105,8 @@ class DeepSeekApiClient(private val token: String) {
         val inputTokens: Long = 0,
         val outputTokens: Long = 0,
         val cacheHitTokens: Long = 0,
-        val cacheMissTokens: Long = 0
+        val cacheMissTokens: Long = 0,
+        val requests: Long = 0
     ) {
         val totalTokens: Long get() = inputTokens + outputTokens + cacheHitTokens + cacheMissTokens
         val cacheHitRate: String get() {
@@ -117,7 +120,9 @@ class DeepSeekApiClient(private val token: String) {
     private fun fetchTodayUsage(): TodayUsageResult {
         val month = String.format("%02d", cal.get(Calendar.MONTH) + 1)
         val year = cal.get(Calendar.YEAR).toString()
-        val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+        val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).apply {
+            timeZone = usageTimeZone
+        }.format(Date())
 
         var flashUsage = TokenBreakdown()
         var proUsage = TokenBreakdown()
@@ -130,7 +135,7 @@ class DeepSeekApiClient(private val token: String) {
             val today = days.find { it.date == todayStr }
             if (today != null) {
                 for (md in today.data ?: emptyList()) {
-                    var inTk = 0L; var outTk = 0L; var hitTk = 0L; var missTk = 0L
+                    var inTk = 0L; var outTk = 0L; var hitTk = 0L; var missTk = 0L; var requests = 0L
                     for (u in md.usage ?: emptyList()) {
                         val amt = u.amount?.toLongOrNull() ?: 0L
                         when (u.type) {
@@ -138,9 +143,10 @@ class DeepSeekApiClient(private val token: String) {
                             "PROMPT_CACHE_HIT_TOKEN" -> hitTk += amt
                             "PROMPT_CACHE_MISS_TOKEN" -> missTk += amt
                             "RESPONSE_TOKEN" -> outTk += amt
+                            "REQUEST" -> requests += amt
                         }
                     }
-                    val breakdown = TokenBreakdown(inTk, outTk, hitTk, missTk)
+                    val breakdown = TokenBreakdown(inTk, outTk, hitTk, missTk, requests)
                     when (md.model) {
                         "deepseek-v4-flash" -> flashUsage = breakdown
                         "deepseek-v4-pro" -> proUsage = breakdown
@@ -177,8 +183,8 @@ class DeepSeekApiClient(private val token: String) {
 
         return TodayUsageResult(
             todayCostTotal = "%.2f".format(totalCost),
-            flash = ModelData(flashUsage.totalTokens, flashUsage.cacheHitRate, "%.2f".format(flashCost)),
-            pro = ModelData(proUsage.totalTokens, proUsage.cacheHitRate, "%.2f".format(proCost))
+            flash = ModelData(flashUsage.totalTokens, flashUsage.cacheHitRate, "%.2f".format(flashCost), flashUsage.requests),
+            pro = ModelData(proUsage.totalTokens, proUsage.cacheHitRate, "%.2f".format(proCost), proUsage.requests)
         )
     }
 

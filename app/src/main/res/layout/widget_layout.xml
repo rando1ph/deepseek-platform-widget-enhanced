@@ -8,29 +8,83 @@
     android:padding="16dp"
     android:background="@drawable/widget_bg">
 
-    <TextView
-        android:id="@+id/tv_balance"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:id="@+id/widget_summary_area"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="¥0.00"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:textColor="#1A73E8"
-        android:lines="1"
-        android:ellipsize="end" />
+        android:orientation="vertical"
+        android:paddingBottom="8dp">
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <TextView
+                android:id="@+id/tv_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="DeepSeek"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="#4D6BFE" />
+            <TextView
+                android:id="@+id/tv_updated"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:text="--:--"
+                android:textSize="11sp"
+                android:textColor="#687386" />
+            <TextView
+                android:id="@+id/tv_refresh_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:layout_marginEnd="38dp"
+                android:text=""
+                android:textSize="10sp"
+                android:textColor="#3552D6" />
+        </FrameLayout>
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp">
+            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="vertical">
+                <TextView android:id="@+id/tv_balance_value" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="¥0.00" android:textSize="22sp" android:textStyle="bold" android:textColor="#3552D6" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="余额" android:textSize="10sp" android:textColor="#5E6675" />
+            </LinearLayout>
+            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:orientation="vertical">
+                <TextView android:id="@+id/tv_today_value" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="¥0" android:textSize="22sp" android:textStyle="bold" android:textColor="#3552D6" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:text="今日" android:textSize="10sp" android:textColor="#5E6675" />
+            </LinearLayout>
+            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="end" android:orientation="vertical">
+                <TextView android:id="@+id/tv_month_value" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="¥0" android:textSize="22sp" android:textStyle="bold" android:textColor="#3552D6" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="end" android:text="本月" android:textSize="10sp" android:textColor="#5E6675" />
+            </LinearLayout>
+            <!-- Kept for compatibility with the renderer; not visible. -->
+            <TextView android:id="@+id/tv_balance" android:layout_width="1dp" android:layout_height="1dp" android:textColor="@android:color/transparent" />
+            <TextView android:id="@+id/tv_today_cost" android:layout_width="1dp" android:layout_height="1dp" android:textColor="@android:color/transparent" />
+            <TextView android:id="@+id/tv_month_cost" android:layout_width="1dp" android:layout_height="1dp" android:textColor="@android:color/transparent" />
+        </FrameLayout>
+    </LinearLayout>
 
-    <TextView
+    <TextView android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginTop="4dp" android:layout_marginBottom="8dp" android:background="@color/divider_color" android:text="" />
+
+    <LinearLayout
+        android:id="@+id/widget_model_area"
         android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="@color/divider_color"
-        android:layout_marginTop="10dp"
-        android:layout_marginBottom="10dp" />
-
-    <TextView
-        android:id="@+id/tv_bottom_placeholder"
-        android:layout_width="match_parent"
-        android:layout_height="40dp"
-        android:text=""
-        android:textColor="@android:color/transparent" />
-
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+        <TextView android:id="@+id/tv_model" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Flash ›" android:textSize="13sp" android:textStyle="bold" android:textColor="#4D6BFE" />
+        <FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp">
+            <TextView android:id="@+id/tv_tokens" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textSize="14sp" android:textStyle="bold" android:textColor="#3552D6" />
+            <TextView android:id="@+id/tv_requests" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:text="0" android:textSize="14sp" android:textStyle="bold" android:textColor="#3552D6" />
+            <TextView android:id="@+id/tv_cache" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center_horizontal" android:layout_marginStart="72dp" android:text="--" android:textSize="14sp" android:textStyle="bold" android:textColor="#198754" />
+            <TextView android:id="@+id/tv_model_cost" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="end" android:text="¥0" android:textSize="14sp" android:textStyle="bold" android:textColor="#C45131" />
+        </FrameLayout>
+        <FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Token" android:textSize="9sp" android:textColor="#5E6675" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:text="Requests" android:textSize="9sp" android:textColor="#5E6675" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center_horizontal" android:layout_marginStart="72dp" android:text="Cache" android:textSize="9sp" android:textColor="#5E6675" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="end" android:text="Cost" android:textSize="9sp" android:textColor="#5E6675" />
+        </FrameLayout>
+    </LinearLayout>
 </LinearLayout>
