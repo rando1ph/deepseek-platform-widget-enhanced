@@ -25,9 +25,7 @@
 | ✅ GitHub Actions CI builds | ✅ CI 自动构建 APK |
 
 ## Screenshots
-
-*layout*
-
+<img width="770" height="472" alt="image" src="https://github.com/user-attachments/assets/5c60f054-412c-47bd-9581-7750d9c192fa" />
 ### 上半区 — 账户总览
 | 余额 | 今日花费 | 本月累计 |
 |------|---------|---------|
