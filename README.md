@@ -1,4 +1,4 @@
-# DeepSeek Dashboard Widget 📊
+# DeepSeek Platform Widget 📊
 
 > Real-time DeepSeek API balance, usage, and cache hit rate — on your Android home screen
 
