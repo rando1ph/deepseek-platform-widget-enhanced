@@ -1,10 +1,14 @@
 # DeepSeek Platform Widget 📊
 
+[English](#english) | [中文](#中文)
+
 > Real-time DeepSeek API balance, usage, and cache hit rate — on your Android home screen
 
 <img width="770" alt="screenshot" src="https://github.com/user-attachments/assets/5c60f054-412c-47bd-9581-7750d9c192fa" />
 
-## Features
+## English
+
+### Features
 
 - ✅ **Account login** — email + password → Bearer Token, no manual API key
 - ✅ **Balance · Today Cost · Month Cost** — three-panel summary at a glance
@@ -86,9 +90,9 @@ MIT — see [LICENSE](LICENSE)
 
 ---
 
-# 中文
+## 中文
 
-## 功能介绍
+### 功能介绍
 
 - ✅ **账号登录** — 邮箱 + 密码获取 Bearer Token，无需手动填写 API Key
 - ✅ **三栏总览** — 余额 / 今日花费 / 本月累计
