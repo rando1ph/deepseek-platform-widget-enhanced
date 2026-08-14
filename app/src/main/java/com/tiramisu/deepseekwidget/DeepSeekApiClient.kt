@@ -40,6 +40,7 @@ class DeepSeekApiClient(
     }
 
     private val gson = Gson()
+    private val tzOffsetMinutes = usageTimeZone.getOffset(System.currentTimeMillis()) / 60000
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
@@ -55,6 +56,7 @@ class DeepSeekApiClient(
         .header("x-client-platform", "web")
         .header("x-client-version", "1.0.0")
         .header("x-app-version", "1.0.0")
+        .header("x-client-timezone-offset", tzOffsetMinutes.toString())
         .build()
 
     fun fetchAll(): WidgetDisplayData {
@@ -161,12 +163,23 @@ class DeepSeekApiClient(
         val todayCostByModel = mutableMapOf<String, Double>()
 
         // usage/amount: token counts per model (all API keys summed)
+        var amountError: String? = null
+        var costError: String? = null
+        var amountSeriesCount = 0
+        var costSeriesCount = 0
         try {
             val body = execute("$AMOUNT_URL?start=$monthStart&end=$monthEnd&tz=$tzOffsetSec")
+            Log.d("DS_AMOUNT", body.take(2000))
             val resp = gson.fromJson(body, UsageByKeyAmountResponse::class.java)
-            for (series in resp.data?.bizData?.series ?: emptyList()) {
-                val model = series.model ?: continue
-                for (b in series.buckets ?: emptyList()) {
+            if (resp.code != 0) throw Exception("code=${resp.code} ${resp.msg}")
+            val data = resp.data ?: throw Exception("data 为空: ${body.take(200)}")
+            if (data.bizCode != 0) throw Exception("biz_code=${data.bizCode} ${data.bizMsg}")
+            val biz = data.bizData ?: throw Exception("biz_data 为空: ${body.take(200)}")
+            val series = biz.series ?: emptyList()
+            amountSeriesCount = series.size
+            for (s in series) {
+                val model = s.model ?: continue
+                for (b in s.buckets ?: emptyList()) {
                     val t = b.time ?: continue
                     val u = b.usage ?: continue
                     if (t >= monthStart && t < monthEnd) {
@@ -179,16 +192,25 @@ class DeepSeekApiClient(
                     }
                 }
             }
-        } catch (e: Exception) { Log.w("DS_API", "amount failed", e) }
+        } catch (e: Exception) {
+            Log.w("DS_API", "amount failed", e)
+            amountError = e.message ?: "未知错误"
+        }
 
         // usage/cost: per-model cost amounts in CNY (all API keys summed)
         try {
             val body = execute("$COST_URL?start=$monthStart&end=$monthEnd&tz=$tzOffsetSec")
+            Log.d("DS_COST", body.take(2000))
             val resp = gson.fromJson(body, UsageByKeyCostResponse::class.java)
-            val entry = resp.data?.bizData?.data?.firstOrNull()
-            for (series in entry?.series ?: emptyList()) {
-                val model = series.model ?: continue
-                for (b in series.buckets ?: emptyList()) {
+            if (resp.code != 0) throw Exception("code=${resp.code} ${resp.msg}")
+            val data = resp.data ?: throw Exception("data 为空: ${body.take(200)}")
+            if (data.bizCode != 0) throw Exception("biz_code=${data.bizCode} ${data.bizMsg}")
+            val biz = data.bizData ?: throw Exception("biz_data 为空: ${body.take(200)}")
+            val entry = biz.data?.firstOrNull()
+            costSeriesCount = entry?.series?.size ?: 0
+            for (s in entry?.series ?: emptyList()) {
+                val model = s.model ?: continue
+                for (b in s.buckets ?: emptyList()) {
                     val t = b.time ?: continue
                     val cost = b.cost?.toDoubleOrNull() ?: 0.0
                     if (t >= monthStart && t < monthEnd) {
@@ -199,7 +221,18 @@ class DeepSeekApiClient(
                     }
                 }
             }
-        } catch (e: Exception) { Log.w("DS_API", "cost failed", e) }
+        } catch (e: Exception) {
+            Log.w("DS_API", "cost failed", e)
+            costError = e.message ?: "未知错误"
+        }
+
+        // 出错时不再静默归零：把真实原因透传到 widget 上
+        if (amountError != null && costError != null) {
+            throw Exception("用量接口失败: amount[$amountError] cost[$costError]")
+        }
+        if (amountError == null && costError == null && amountSeriesCount == 0 && costSeriesCount == 0) {
+            throw Exception("用量接口返回空数据(series 为空)，请反馈")
+        }
 
         val monthTokensAll = monthTokensByModel.values.sumOf { it.totalTokens }
         val monthCostAll = monthCostByModel.values.sum()
@@ -330,7 +363,7 @@ data class UsageByKeyAmountData(
 data class UsageByKeyAmountBiz(
     val start: Long? = null,
     val end: Long? = null,
-    val bucket: String? = null,
+    val bucket: Long? = null,
     val models: List<String>? = null,
     val series: List<UsageByKeySeries>? = null
 )
@@ -372,7 +405,7 @@ data class UsageByKeyCostData(
 data class UsageByKeyCostBiz(
     val start: Long? = null,
     val end: Long? = null,
-    val bucket: String? = null,
+    val bucket: Long? = null,
     val models: List<String>? = null,
     val data: List<UsageCostCurrency>? = null
 )

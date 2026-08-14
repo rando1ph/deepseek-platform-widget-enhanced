@@ -25,8 +25,6 @@ class WidgetUpdateWorker(
         }
 
         return try {
-            // 先确保官方定价缓存新鲜（失败静默，不影响主流程）
-            DeepSeekPricing.ensureFresh(applicationContext)
             val client = DeepSeekApiClient(token, DeepSeekWidget.getUsageTimeZone(applicationContext))
             val data = client.fetchAll()
             DeepSeekWidget.updateWidgets(applicationContext, data)
