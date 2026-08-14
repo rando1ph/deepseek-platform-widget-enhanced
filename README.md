@@ -14,7 +14,6 @@
 - ✅ **Balance · Today Cost · Month Cost** — three-panel summary at a glance
 - ✅ **Per-model breakdown** — Flash / Pro split with Token, cache rate, cost, requests
 - ✅ **Cache hit rate** with color coding — 🟢 ≥90% · 🟡 ≥80% · 🔴 <80%
-- ✅ **Peak/off-peak price auto-update** — syncs official pricing page, shows current period price (e.g. `Flash 高峰 ¥9/M`)
 - ✅ **Timezone-aware stats** — configurable usage timezone (device / Beijing / UTC)
 - ✅ **Cached display** — no flicker when switching apps or refreshing
 - ✅ **Auto re-login** — 401 triggers silent token refresh
@@ -49,7 +48,6 @@ DeepSeek Platform API endpoints, all authenticated via account login Bearer Toke
 | `GET /api/v0/users/get_user_summary` | Balance + available token estimation |
 | `GET /api/v0/usage/by_api_key/amount?start=&end=&tz=` | Per-model token breakdown (epoch range + timezone) |
 | `GET /api/v0/usage/by_api_key/cost?start=&end=&tz=` | Per-model cost breakdown (epoch range + timezone) |
-| `GET api-docs.deepseek.com/zh-cn/quick_start/pricing/` | Official pricing page (peak/valley, auto-refreshed) |
 
 Cache hit rate = `cache_hit / (cache_hit + cache_miss) × 100%`
 
@@ -92,7 +90,7 @@ keyPassword=***
 │       ├── java/com/tiramisu/deepseekwidget/
 │       │   ├── DeepSeekWidget.kt          # AppWidgetProvider + render
 │       │   ├── DeepSeekApiClient.kt       # All Platform API calls (by_api_key endpoints)
-│       │   ├── DeepSeekPricing.kt         # Official pricing fetch/parse/cache (peak-valley)
+│       │   ├── DeepSeekPricing.kt         # Official pricing parser (reserved, not enabled)
 │       │   ├── DeepSeekData.kt            # WidgetDisplayData + ModelData
 │       │   ├── DeepSeekAccountManager.kt  # Login + token lifecycle
 │       │   ├── DeepSeekWidgetConfig.kt    # Config activity (email+password + timezone)
@@ -126,7 +124,6 @@ MIT — see [LICENSE](LICENSE)
 - ✅ **三栏总览** — 余额 / 今日花费 / 本月累计
 - ✅ **模型详析** — Flash / Pro 切换，显示 Token 量、缓存命中率、花费、请求数
 - ✅ **缓存命中率颜色** — ≥90% 绿 · ≥80% 黄 · <80% 红
-- ✅ **峰谷价格自动更新** — 同步官方定价页，状态栏显示当前高峰/闲时价（如 `Flash 高峰 ¥9/M`）
 - ✅ **时区设置** — 配置页可选设备/北京/UTC，影响今日/本月统计边界
 - ✅ **缓存显示** — 切应用不闪，刷新失败保留上次数据
 - ✅ **自动重登** — 401 过期自动用缓存密码重新登录
@@ -159,7 +156,6 @@ DeepSeek 平台接口，均通过账号登录 Bearer Token 认证：
 | `api/v0/users/get_user_summary` | 余额、可用 Token 估算 |
 | `api/v0/usage/by_api_key/amount?start=&end=&tz=` | 按模型拆分 Token 明细（时间范围+时区） |
 | `api/v0/usage/by_api_key/cost?start=&end=&tz=` | 按模型拆分费用（时间范围+时区） |
-| `api-docs.deepseek.com/zh-cn/quick_start/pricing/` | 官方定价页（峰谷定价，自动同步） |
 
 > 📌 **2026-08 平台更新**：用量接口迁移到 `by_api_key`（`start/end/tz` 参数），`summary.monthly_costs` 已弃用——本月费用/Token 由新接口自行汇总；平台 web 接口不再接受 API Key 作 Bearer（需账号登录 Token）。2026-08-17 起实施峰谷定价（北京 9:00-12:00、14:00-18:00 高峰，闲时半价）。
 
