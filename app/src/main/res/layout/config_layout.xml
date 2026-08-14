@@ -72,6 +72,24 @@
             android:paddingHorizontal="12dp"
             android:autofillHints="password" />
 
+        <!-- 用量统计时区（开放平台 2026-08 起支持自定义时区） -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="用量统计时区"
+            android:textSize="13sp"
+            android:textColor="@color/label_text"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="4dp" />
+
+        <Spinner
+            android:id="@+id/sp_tz"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:entries="@array/tz_options"
+            android:background="@android:drawable/edit_text"
+            android:paddingHorizontal="12dp" />
+
         <!-- Status -->
         <TextView
             android:id="@+id/tv_config_status"
@@ -116,7 +134,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="\n💡 说明：\n• 使用 DeepSeek 开放平台账号登录\n• 密码加密存储在手机本地\n• 登录后自动获取访问令牌\n• 令牌过期会自动重新登录\n• 每 30 分钟自动刷新用量数据\n• 点击小组件可手动刷新"
+            android:text="\n💡 说明：\n• 使用 DeepSeek 开放平台账号登录\n• 密码加密存储在手机本地\n• 登录后自动获取访问令牌\n• 令牌过期会自动重新登录\n• 每 30 分钟自动刷新用量数据\n• 时区影响“今日/本月”的统计边界\n• 价格自动跟随官方峰谷定价（高峰/闲时）\n• 点击小组件可手动刷新"
             android:textSize="12sp"
             android:textColor="@color/sub_text"
             android:layout_marginTop="32dp"

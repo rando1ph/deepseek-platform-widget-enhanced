@@ -6,4 +6,9 @@
     <string name="btn_save">保存</string>
     <string name="btn_cancel">取消</string>
     <string name="hint_api_key">输入你的 DeepSeek API Key</string>
+    <string-array name="tz_options">
+        <item>跟随设备时区</item>
+        <item>北京时间 (UTC+8)</item>
+        <item>UTC+0</item>
+    </string-array>
 </resources>

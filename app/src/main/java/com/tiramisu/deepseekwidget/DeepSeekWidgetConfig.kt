@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.work.*
@@ -47,6 +48,7 @@ class DeepSeekWidgetConfig : Activity() {
 
         val etEmail = findViewById<EditText>(R.id.et_email)
         val etPassword = findViewById<EditText>(R.id.et_password)
+        val spTz = findViewById<Spinner>(R.id.sp_tz)
         val btnLogin = findViewById<Button>(R.id.btn_login)
         val btnCancel = findViewById<Button>(R.id.btn_cancel)
         val tvStatus = findViewById<TextView>(R.id.tv_config_status)
@@ -57,6 +59,7 @@ class DeepSeekWidgetConfig : Activity() {
         if (!existingEmail.isNullOrBlank()) {
             etEmail.setText(existingEmail)
         }
+        spTz.setSelection(DeepSeekWidget.getTzMode(this))
 
         btnLogin.setOnClickListener {
             val email = etEmail.text.toString().trim()
@@ -81,6 +84,8 @@ class DeepSeekWidgetConfig : Activity() {
             Thread {
                 try {
                     accountManager.login(email, password)
+                    // 保存用量统计时区（开放平台支持自定义时区后，月/日边界按此计算）
+                    DeepSeekWidget.setTzMode(this, spTz.selectedItemPosition)
 
                     // Back on UI thread to finish
                     runOnUiThread {

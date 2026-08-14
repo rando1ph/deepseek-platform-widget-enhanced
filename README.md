@@ -14,6 +14,8 @@
 - ✅ **Balance · Today Cost · Month Cost** — three-panel summary at a glance
 - ✅ **Per-model breakdown** — Flash / Pro split with Token, cache rate, cost, requests
 - ✅ **Cache hit rate** with color coding — 🟢 ≥90% · 🟡 ≥80% · 🔴 <80%
+- ✅ **Peak/off-peak price auto-update** — syncs official pricing page, shows current period price (e.g. `Flash 高峰 ¥9/M`)
+- ✅ **Timezone-aware stats** — configurable usage timezone (device / Beijing / UTC)
 - ✅ **Cached display** — no flicker when switching apps or refreshing
 - ✅ **Auto re-login** — 401 triggers silent token refresh
 - ✅ **Auto-refresh every 30 min** — or tap to refresh instantly
@@ -31,7 +33,7 @@
 
 ## Quick Start
 
-1. **Download APK** from [GitHub Actions](https://github.com/MCwasd/deepseek-widget-new/actions) → latest run → Artifacts
+1. **Download APK** from [GitHub Actions](https://github.com/MCwasd/deepseek-platform-widget/actions) → latest run → Artifacts
 2. **Install** on Android 8.0+
 3. **Long press** home → Add widget → **DeepSeek Dashboard**
 4. **Login** with your DeepSeek platform email + password
@@ -39,15 +41,19 @@
 
 ## Data Sources
 
-Three DeepSeek Platform API endpoints, all authenticated via Bearer Token:
+DeepSeek Platform API endpoints, all authenticated via account login Bearer Token:
 
 | API | Returns |
 |-----|---------|
-| `get_user_summary` | Balance, monthly cost, monthly tokens |
-| `usage/amount` | Daily token breakdown by model (input / cache / output / requests) |
-| `usage/cost` | Daily cost by model (CNY) |
+| `POST /auth-api/v0/users/login` | Login → Bearer Token (email + password) |
+| `GET /api/v0/users/get_user_summary` | Balance + available token estimation |
+| `GET /api/v0/usage/by_api_key/amount?start=&end=&tz=` | Per-model token breakdown (epoch range + timezone) |
+| `GET /api/v0/usage/by_api_key/cost?start=&end=&tz=` | Per-model cost breakdown (epoch range + timezone) |
+| `GET api-docs.deepseek.com/zh-cn/quick_start/pricing/` | Official pricing page (peak/valley, auto-refreshed) |
 
 Cache hit rate = `cache_hit / (cache_hit + cache_miss) × 100%`
+
+> 📌 **2026-08 platform update**: usage endpoints migrated to `by_api_key` with `start/end/tz` params; `summary.monthly_costs` is deprecated — monthly cost/tokens are now computed from the new endpoints. API Keys are no longer accepted as Bearer on platform web APIs (use account login token). Pricing moved to peak/valley (Beijing 9:00-12:00, 14:00-18:00 peak; off-peak at half price) effective 2026-08-17.
 
 ## Tech Stack
 
@@ -61,8 +67,8 @@ Cache hit rate = `cache_hit / (cache_hit + cache_miss) × 100%`
 ## Build from Source
 
 ```bash
-git clone https://github.com/MCwasd/deepseek-widget-new.git
-cd deepseek-widget-new
+git clone https://github.com/MCwasd/deepseek-platform-widget.git
+cd deepseek-platform-widget
 ./gradlew assembleDebug
 # APK: app/build/outputs/apk/debug/
 ```
@@ -76,6 +82,28 @@ storeFile=/path/to/release.keystore
 storePassword=***
 keyAlias=release
 keyPassword=***
+```
+
+## Project Structure
+
+```
+├── app/
+│   └── src/main/
+│       ├── java/com/tiramisu/deepseekwidget/
+│       │   ├── DeepSeekWidget.kt          # AppWidgetProvider + render
+│       │   ├── DeepSeekApiClient.kt       # All Platform API calls (by_api_key endpoints)
+│       │   ├── DeepSeekPricing.kt         # Official pricing fetch/parse/cache (peak-valley)
+│       │   ├── DeepSeekData.kt            # WidgetDisplayData + ModelData
+│       │   ├── DeepSeekAccountManager.kt  # Login + token lifecycle
+│       │   ├── DeepSeekWidgetConfig.kt    # Config activity (email+password + timezone)
+│       │   └── WidgetUpdateWorker.kt      # WorkManager periodic update
+│       └── res/
+│           ├── layout/widget_layout.xml   # RemoteViews layout
+│           ├── layout/config_layout.xml   # Login config UI
+│           └── xml/widget_info.xml        # Widget metadata
+├── build.gradle.kts
+├── settings.gradle.kts
+└── .github/workflows/build-apk.yml        # CI (GitHub Actions)
 ```
 
 ## Privacy
@@ -98,6 +126,8 @@ MIT — see [LICENSE](LICENSE)
 - ✅ **三栏总览** — 余额 / 今日花费 / 本月累计
 - ✅ **模型详析** — Flash / Pro 切换，显示 Token 量、缓存命中率、花费、请求数
 - ✅ **缓存命中率颜色** — ≥90% 绿 · ≥80% 黄 · <80% 红
+- ✅ **峰谷价格自动更新** — 同步官方定价页，状态栏显示当前高峰/闲时价（如 `Flash 高峰 ¥9/M`）
+- ✅ **时区设置** — 配置页可选设备/北京/UTC，影响今日/本月统计边界
 - ✅ **缓存显示** — 切应用不闪，刷新失败保留上次数据
 - ✅ **自动重登** — 401 过期自动用缓存密码重新登录
 - ✅ **每 30 分钟自动刷新** — 也可点击手动刷新
@@ -113,7 +143,7 @@ MIT — see [LICENSE](LICENSE)
 
 ## 快速开始
 
-1. 从 [GitHub Actions](https://github.com/MCwasd/deepseek-widget-new/actions) 下载最新 Artifact APK
+1. 从 [GitHub Actions](https://github.com/MCwasd/deepseek-platform-widget/actions) 下载最新 Artifact APK
 2. 安装到 Android 8.0+ 手机
 3. 长按桌面 → 小组件 → **DeepSeek 仪表盘**
 4. 输入 DeepSeek 平台邮箱 + 密码登录
@@ -121,19 +151,23 @@ MIT — see [LICENSE](LICENSE)
 
 ## 数据来源
 
-三个 DeepSeek 平台 API，均通过 Bearer Token 认证：
+DeepSeek 平台接口，均通过账号登录 Bearer Token 认证：
 
 | 接口 | 获取数据 |
 |------|---------|
-| `get_user_summary` | 余额、月花费、月 Token |
-| `usage/amount` | 当日按模型拆分的 Token 明细 |
-| `usage/cost` | 当日按模型拆分花费 |
+| `auth-api/v0/users/login` | 登录获取 Bearer Token（邮箱+密码） |
+| `api/v0/users/get_user_summary` | 余额、可用 Token 估算 |
+| `api/v0/usage/by_api_key/amount?start=&end=&tz=` | 按模型拆分 Token 明细（时间范围+时区） |
+| `api/v0/usage/by_api_key/cost?start=&end=&tz=` | 按模型拆分费用（时间范围+时区） |
+| `api-docs.deepseek.com/zh-cn/quick_start/pricing/` | 官方定价页（峰谷定价，自动同步） |
+
+> 📌 **2026-08 平台更新**：用量接口迁移到 `by_api_key`（`start/end/tz` 参数），`summary.monthly_costs` 已弃用——本月费用/Token 由新接口自行汇总；平台 web 接口不再接受 API Key 作 Bearer（需账号登录 Token）。2026-08-17 起实施峰谷定价（北京 9:00-12:00、14:00-18:00 高峰，闲时半价）。
 
 ## 自行编译
 
 ```bash
-git clone https://github.com/MCwasd/deepseek-widget-new.git
-cd deepseek-widget-new
+git clone https://github.com/MCwasd/deepseek-platform-widget.git
+cd deepseek-platform-widget
 ./gradlew assembleDebug
 # APK: app/build/outputs/apk/debug/
 ```
