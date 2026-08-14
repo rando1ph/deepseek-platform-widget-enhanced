@@ -2,6 +2,7 @@ package com.tiramisu.deepseekwidget
 
 import android.util.Log
 import com.google.gson.Gson
+import com.google.gson.JsonElement
 import com.google.gson.annotations.SerializedName
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -369,7 +370,8 @@ data class UsageByKeyAmountBiz(
 )
 
 data class UsageByKeySeries(
-    @SerializedName("api_key") val apiKey: String? = null,
+    // 实际是对象（含 tracking_id/name 等元信息），不是字符串；本应用只按 model 汇总，忽略内容
+    @SerializedName("api_key") val apiKey: JsonElement? = null,
     val model: String? = null,
     val buckets: List<UsageBucket>? = null
 )
@@ -416,7 +418,8 @@ data class UsageCostCurrency(
 )
 
 data class UsageByKeyCostSeries(
-    @SerializedName("api_key") val apiKey: String? = null,
+    // 实际是对象（含 tracking_id/name 等元信息），不是字符串；本应用只按 model 汇总，忽略内容
+    @SerializedName("api_key") val apiKey: JsonElement? = null,
     val model: String? = null,
     val buckets: List<CostBucket>? = null
 )
