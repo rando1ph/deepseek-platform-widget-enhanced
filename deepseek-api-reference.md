@@ -164,7 +164,11 @@ GET https://platform.deepseek.com/api/v0/usage/by_api_key/amount?start=178551360
       "models": ["deepseek-v4-flash", "deepseek-v4-pro"],
       "series": [
         {
-          "api_key": "sk-...",
+          "api_key": {
+            "tracking_id": "***",
+            "name": "***",
+            "sensitive_id": "***"
+          },
           "model": "deepseek-v4-flash",
           "buckets": [
             { "time": 1785513600, "usage": {
@@ -184,9 +188,11 @@ GET https://platform.deepseek.com/api/v0/usage/by_api_key/amount?start=178551360
 **提取逻辑（小组件）：**
 
 1. 遍历 `series[]`（每个 API Key × 模型一条），按 `model` 归并
-2. 只统计 `time ∈ [start, end)` 的 bucket；同一次请求可同时得到
+2. ⚠️ `series[].api_key` 是**对象**（含 `tracking_id`/`name`/`sensitive_id`），不是字符串；
+   不需要时忽略即可（Gson 若声明成 String 会直接解析崩溃，导致整次调用失败）
+3. 只统计 `time ∈ [start, end)` 的 bucket；同一次请求可同时得到
    「今日」（`time ∈ [今日00:00, 明日00:00)`）与「本月」两组
-3. `usage` 键名为大写：`PROMPT_CACHE_HIT_TOKEN` / `PROMPT_CACHE_MISS_TOKEN` /
+4. `usage` 键名为大写：`PROMPT_CACHE_HIT_TOKEN` / `PROMPT_CACHE_MISS_TOKEN` /
    `RESPONSE_TOKEN` / `REQUEST`；**没有** PROMPT_TOKEN（输入 = 命中 + 未命中）
 4. `amount` 是实际整数 Token 数，直接 `toLongOrNull()`
 5. `REQUEST` 单独归入 `requests` 字段，不计入 `totalTokens`
@@ -225,7 +231,11 @@ GET https://platform.deepseek.com/api/v0/usage/by_api_key/cost?start=1785513600&
           "currency": "CNY",
           "series": [
             {
-              "api_key": "sk-...",
+              "api_key": {
+                "tracking_id": "***",
+                "name": "***",
+                "sensitive_id": "***"
+              },
               "model": "deepseek-v4-flash",
               "buckets": [
                 { "time": 1785513600, "cost": "1.85" }
