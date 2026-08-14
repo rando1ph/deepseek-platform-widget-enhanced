@@ -240,6 +240,8 @@ class DeepSeekApiClient(
 
         val flashToday = todayTokensByModel["deepseek-v4-flash"] ?: TokenBreakdown()
         val proToday = todayTokensByModel["deepseek-v4-pro"] ?: TokenBreakdown()
+        val flashMonthTk = monthTokensByModel["deepseek-v4-flash"]?.totalTokens ?: 0L
+        val proMonthTk = monthTokensByModel["deepseek-v4-pro"]?.totalTokens ?: 0L
 
         val todayCostTotal = (todayCostByModel["deepseek-v4-flash"] ?: 0.0) +
             (todayCostByModel["deepseek-v4-pro"] ?: 0.0)
@@ -253,13 +255,15 @@ class DeepSeekApiClient(
                 totalTokens = flashToday.totalTokens,
                 cacheHitRate = flashToday.cacheHitRate,
                 cost = "%.2f".format(todayCostByModel["deepseek-v4-flash"] ?: 0.0),
-                requests = flashToday.requests
+                requests = flashToday.requests,
+                monthlyTokens = flashMonthTk
             ),
             pro = ModelData(
                 totalTokens = proToday.totalTokens,
                 cacheHitRate = proToday.cacheHitRate,
                 cost = "%.2f".format(todayCostByModel["deepseek-v4-pro"] ?: 0.0),
-                requests = proToday.requests
+                requests = proToday.requests,
+                monthlyTokens = proMonthTk
             )
         )
     }

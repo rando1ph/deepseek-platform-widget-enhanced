@@ -12,7 +12,8 @@ data class ModelData(
     val totalTokens: Long = 0,
     val cacheHitRate: String = "--",
     val cost: String = "0.00",
-    val requests: Long = 0
+    val requests: Long = 0,
+    val monthlyTokens: Long = 0
 )
 
 data class WidgetDisplayData(
