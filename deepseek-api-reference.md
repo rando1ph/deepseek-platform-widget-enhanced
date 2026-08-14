@@ -309,10 +309,11 @@ data class WidgetDisplayData(
 )
 
 data class ModelData(
-    val totalTokens: Long,          // Token 总量（不含 REQUEST）
+    val totalTokens: Long,          // Token 总量（不含 REQUEST，今日）
     val cacheHitRate: String,       // "91.3" 或 "--"
-    val cost: String,               // "1.85"
-    val requests: Long              // API 请求次数
+    val cost: String,               // "1.85"（今日）
+    val requests: Long,             // API 请求次数（今日）
+    val monthlyTokens: Long         // 该模型本月 Token 总量（随 Flash/Pro 切换）
 )
 ```
 
