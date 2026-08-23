@@ -24,10 +24,17 @@ data class WidgetDisplayData(
     val monthlyCost: String = "0.00",
     val monthlyTokens: Long = 0,
     val flashData: ModelData = ModelData(),
+    val visionData: ModelData = ModelData(),
     val proData: ModelData = ModelData(),
     val updatedAt: Long = 0L,
     val error: String? = null
 ) {
+    /** 0=Flash 1=Flash Vision Exp 2=Pro（小组件下半区三态切换） */
+    fun modelData(index: Int): ModelData = when (index) {
+        2 -> proData
+        1 -> visionData
+        else -> flashData
+    }
     val formattedBalance: String get() = "¥$balance"
 
     val formattedTodayCost: String

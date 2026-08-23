@@ -38,6 +38,11 @@ class DeepSeekApiClient(
         private const val AMOUNT_URL = "$PLATFORM_BASE/api/v0/usage/by_api_key/amount"
         private const val COST_URL = "$PLATFORM_BASE/api/v0/usage/by_api_key/cost"
         private const val TIMEOUT_SECONDS = 15L
+
+        // 2026-08 新上线多模态模型（价格与 Flash 一致）
+        private const val MODEL_FLASH = "deepseek-v4-flash"
+        private const val MODEL_VISION = "deepseek-v4-flash-vision-exp"
+        private const val MODEL_PRO = "deepseek-v4-pro"
     }
 
     private val gson = Gson()
@@ -73,6 +78,7 @@ class DeepSeekApiClient(
                 monthlyCost = month.monthCostTotal,
                 monthlyTokens = month.monthTokens,
                 flashData = month.flash,
+                visionData = month.vision,
                 proData = month.pro,
                 updatedAt = System.currentTimeMillis()
             )
@@ -142,6 +148,7 @@ class DeepSeekApiClient(
         val monthCostTotal: String = "0.00",
         val monthTokens: Long = 0,
         val flash: ModelData = ModelData(),
+        val vision: ModelData = ModelData(),
         val pro: ModelData = ModelData()
     )
 
@@ -238,15 +245,18 @@ class DeepSeekApiClient(
         val monthTokensAll = monthTokensByModel.values.sumOf { it.totalTokens }
         val monthCostAll = monthCostByModel.values.sum()
 
-        val flashToday = todayTokensByModel["deepseek-v4-flash"] ?: TokenBreakdown()
-        val proToday = todayTokensByModel["deepseek-v4-pro"] ?: TokenBreakdown()
-        val flashMonthTk = monthTokensByModel["deepseek-v4-flash"]?.totalTokens ?: 0L
-        val proMonthTk = monthTokensByModel["deepseek-v4-pro"]?.totalTokens ?: 0L
+        val flashToday = todayTokensByModel[MODEL_FLASH] ?: TokenBreakdown()
+        val visionToday = todayTokensByModel[MODEL_VISION] ?: TokenBreakdown()
+        val proToday = todayTokensByModel[MODEL_PRO] ?: TokenBreakdown()
+        val flashMonthTk = monthTokensByModel[MODEL_FLASH]?.totalTokens ?: 0L
+        val visionMonthTk = monthTokensByModel[MODEL_VISION]?.totalTokens ?: 0L
+        val proMonthTk = monthTokensByModel[MODEL_PRO]?.totalTokens ?: 0L
 
-        val todayCostTotal = (todayCostByModel["deepseek-v4-flash"] ?: 0.0) +
-            (todayCostByModel["deepseek-v4-pro"] ?: 0.0)
+        val todayCostTotal = (todayCostByModel[MODEL_FLASH] ?: 0.0) +
+            (todayCostByModel[MODEL_VISION] ?: 0.0) +
+            (todayCostByModel[MODEL_PRO] ?: 0.0)
 
-        // Flash/Pro 卡片仍显示“今日”数据（与旧版行为一致）
+        // Flash / Flash Vision Exp / Pro 卡片仍显示“今日”数据（与旧版行为一致）
         return MonthUsageResult(
             todayCostTotal = "%.2f".format(todayCostTotal),
             monthCostTotal = "%.2f".format(monthCostAll),
@@ -254,14 +264,21 @@ class DeepSeekApiClient(
             flash = ModelData(
                 totalTokens = flashToday.totalTokens,
                 cacheHitRate = flashToday.cacheHitRate,
-                cost = "%.2f".format(todayCostByModel["deepseek-v4-flash"] ?: 0.0),
+                cost = "%.2f".format(todayCostByModel[MODEL_FLASH] ?: 0.0),
                 requests = flashToday.requests,
                 monthlyTokens = flashMonthTk
+            ),
+            vision = ModelData(
+                totalTokens = visionToday.totalTokens,
+                cacheHitRate = visionToday.cacheHitRate,
+                cost = "%.2f".format(todayCostByModel[MODEL_VISION] ?: 0.0),
+                requests = visionToday.requests,
+                monthlyTokens = visionMonthTk
             ),
             pro = ModelData(
                 totalTokens = proToday.totalTokens,
                 cacheHitRate = proToday.cacheHitRate,
-                cost = "%.2f".format(todayCostByModel["deepseek-v4-pro"] ?: 0.0),
+                cost = "%.2f".format(todayCostByModel[MODEL_PRO] ?: 0.0),
                 requests = proToday.requests,
                 monthlyTokens = proMonthTk
             )

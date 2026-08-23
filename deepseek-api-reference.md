@@ -303,6 +303,7 @@ data class WidgetDisplayData(
     val monthlyCost: String,        // "79.59"（由新 cost 端点汇总）
     val monthlyTokens: Long,        // 289148830（由新 amount 端点汇总）
     val flashData: ModelData,       // Flash 模型专属数据
+    val visionData: ModelData,      // Flash Vision Exp 模型专属数据（2026-08 新增模型）
     val proData: ModelData,         // Pro 模型专属数据
     val updatedAt: Long,            // System.currentTimeMillis()
     val error: String?              // 错误信息（非空=刷新失败）
@@ -358,19 +359,22 @@ data class ModelData(
 Widget 切换 Flash/Pro 时无需重新请求 API，直接从缓存恢复：
 
 ```kotlin
-// 序列化：14 个字段用 | 拼接存 SharedPreferences
+// 序列化：21 个字段用 | 拼接存 SharedPreferences（尾部 vision 5 字段为 1.2.0 新增，旧缓存缺省为 0）
 private fun serialize(d: WidgetDisplayData) = listOf(
     d.balance, d.todayCost, d.monthlyCost, d.monthlyTokens,
     d.updatedAt,
     d.flashData.totalTokens, d.flashData.cacheHitRate, d.flashData.cost, d.flashData.requests,
     d.proData.totalTokens, d.proData.cacheHitRate, d.proData.cost, d.proData.requests,
-    d.error ?: ""
+    d.error ?: "",
+    d.flashData.monthlyTokens, d.proData.monthlyTokens,
+    d.visionData.totalTokens, d.visionData.cacheHitRate, d.visionData.cost, d.visionData.requests,
+    d.visionData.monthlyTokens
 ).joinToString("|")
 ```
 
 **缓存策略：**
 - 每次 API 成功 → `putString(KEY_CACHED_DATA, serialize(data))`
-- 切换模型 → `deserialize(prefs.getString(KEY_CACHED_DATA, null))` → 改 `model_pro` flag → 重新 render
+- 切换模型 → `deserialize(prefs.getString(KEY_CACHED_DATA, null))` → 改 `model_index`（0=Flash 1=Vision Exp 2=Pro，旧 `model_pro` 自动迁移）→ 重新 render
 - 刷新失败 → 保留旧缓存，仅更新 error 字段
 - 缓存命中率颜色编码：≥90% 绿色 `#198754`，≥80% 黄色 `#E09F00`，<80% 红色 `#D93025`
 - 定价缓存：`pricing_cache`（JSON，含 `fetchedAt`），TTL 6h，抓取失败保留旧值/默认值

@@ -12,7 +12,7 @@
 
 - ✅ **Account login** — email + password → Bearer Token, no manual API key
 - ✅ **Balance · Today Cost · Month Cost** — three-panel summary at a glance
-- ✅ **Per-model breakdown** — Flash / Pro split with Token, cache rate, cost, requests
+- ✅ **Per-model breakdown** — Flash / Flash Vision Exp / Pro toggle with Token, cache rate, cost, requests
 - ✅ **Cache hit rate** with color coding — 🟢 ≥90% · 🟡 ≥80% · 🔴 <80%
 - ✅ **Timezone-aware stats** — configurable usage timezone (device / Beijing / UTC)
 - ✅ **Cached display** — no flicker when switching apps or refreshing
@@ -26,9 +26,9 @@
 | Area | Location | Action |
 |------|----------|--------|
 | **Summary** (Balance · Today · Month) | Upper half | **Tap → Refresh** |
-| **Model Detail** (Token · Cache · Cost · Requests) | Lower half | **Tap → Toggle Flash / Pro** |
+| **Model Detail** (Token · Cache · Cost · Requests) | Lower half | **Tap → Toggle Flash / Flash Vision Exp / Pro** |
 
-> The two areas are separated by a horizontal divider. Tap the top to pull fresh data from DeepSeek; tap the bottom to switch between Flash and Pro model stats.
+> The two areas are separated by a horizontal divider. Tap the top to pull fresh data from DeepSeek; tap the bottom to cycle through Flash → Flash Vision Exp → Pro model stats.
 
 ## Quick Start
 
@@ -122,7 +122,7 @@ MIT — see [LICENSE](LICENSE)
 
 - ✅ **账号登录** — 邮箱 + 密码获取 Bearer Token，无需手动填写 API Key
 - ✅ **三栏总览** — 余额 / 今日花费 / 本月累计
-- ✅ **模型详析** — Flash / Pro 切换，显示 Token 量、缓存命中率、花费、请求数
+- ✅ **模型详析** — Flash / Flash Vision Exp / Pro 三态切换，显示 Token 量、缓存命中率、花费、请求数
 - ✅ **缓存命中率颜色** — ≥90% 绿 · ≥80% 黄 · <80% 红
 - ✅ **时区设置** — 配置页可选设备/北京/UTC，影响今日/本月统计边界
 - ✅ **缓存显示** — 切应用不闪，刷新失败保留上次数据
@@ -136,7 +136,7 @@ MIT — see [LICENSE](LICENSE)
 | 区域 | 位置 | 操作 |
 |------|------|------|
 | **上半区** — 余额 / 今日 / 本月 | 分割线以上 | **点击 → 刷新数据** |
-| **下半区** — Token / 缓存率 / 开销 / 请求 | 分割线以下 | **点击 → 切换 Flash / Pro 模型** |
+| **下半区** — Token / 缓存率 / 开销 / 请求 | 分割线以下 | **点击 → Flash / Flash Vision Exp / Pro 循环切换** |
 
 ## 快速开始
 
@@ -157,7 +157,7 @@ DeepSeek 平台接口，均通过账号登录 Bearer Token 认证：
 | `api/v0/usage/by_api_key/amount?start=&end=&tz=` | 按模型拆分 Token 明细（时间范围+时区） |
 | `api/v0/usage/by_api_key/cost?start=&end=&tz=` | 按模型拆分费用（时间范围+时区） |
 
-> 📌 **2026-08 平台更新**：用量接口迁移到 `by_api_key`（`start/end/tz` 参数），`summary.monthly_costs` 已弃用——本月费用/Token 由新接口自行汇总；平台 web 接口不再接受 API Key 作 Bearer（需账号登录 Token）。2026-08-17 起实施峰谷定价（北京 9:00-12:00、14:00-18:00 高峰，闲时半价）。
+> 📌 **2026-08 平台更新**：用量接口迁移到 `by_api_key`（`start/end/tz` 参数），`summary.monthly_costs` 已弃用——本月费用/Token 由新接口自行汇总；平台 web 接口不再接受 API Key 作 Bearer（需账号登录 Token）。2026-08-17 起实施峰谷定价（北京时间周一至周五 9:00-12:00、14:00-18:00 高峰，其余为闲时，闲时半价）。2026-08 平台新增多模态模型 `deepseek-v4-flash-vision-exp`（价格与 Flash 一致），小组件下半区支持其切换与统计。
 
 ## 自行编译
 

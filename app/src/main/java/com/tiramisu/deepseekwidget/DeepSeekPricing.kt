@@ -15,13 +15,14 @@ import java.util.concurrent.TimeUnit
 /**
  * DeepSeek API 定价自动更新。
  *
- * 2026-08-13 起 DeepSeek 采用峰谷定价（北京时间 9:00-12:00、14:00-18:00 为高峰，
- * 其余为闲时，闲时为高峰一半），新价格 2026-08-17 00:00（北京时间）生效。
+ * 2026-08-13 起 DeepSeek 采用峰谷定价（北京时间周一至周五 9:00-12:00、14:00-18:00
+ * 为高峰，其余（含周末）为闲时，闲时为高峰一半），2026-08-17 00:00（北京时间）生效。
+ * 2026-08 平台新增多模态模型 deepseek-v4-flash-vision-exp，价格与 Flash 一致。
  *
  * 价格来源：官方定价页 https://api-docs.deepseek.com/zh-cn/quick_start/pricing/
  * 每次小组件刷新时检查缓存（>6h 重新抓取），官方改价后小组件自动跟随，无需发版。
  *
- * 内置默认值与 2026-08-17 公告一致，抓取失败时兜底。
+ * 内置默认值与官方公告一致，抓取失败时兜底。
  */
 data class Price(
     val cacheHit: Double = 0.0,
@@ -40,6 +41,8 @@ data class DeepSeekPricingSnapshot(
     val peakFlash: Price? = null,
     val offpeakPro: Price? = null,
     val peakPro: Price? = null,
+    val offpeakVision: Price? = null,
+    val peakVision: Price? = null,
     val fetchedAt: Long = 0L
 ) {
     val hasPeakValley: Boolean get() = offpeakFlash != null && peakFlash != null
@@ -47,12 +50,14 @@ data class DeepSeekPricingSnapshot(
     fun isPeakValleyActive(now: Long): Boolean =
         hasPeakValley && (effectiveDateMillis == null || now >= effectiveDateMillis)
 
-    fun outputPrice(pro: Boolean, peak: Boolean): Double? {
-        return if (pro) {
-            if (peak) peakPro?.output else offpeakPro?.output
-        } else {
-            if (peak) peakFlash?.output else offpeakFlash?.output
+    /** 模型索引 0=Flash 1=Flash Vision Exp 2=Pro；vision 缺价格时回退 Flash。 */
+    fun outputPrice(modelIndex: Int, peak: Boolean): Double? {
+        val (off, pk) = when (modelIndex) {
+            2 -> offpeakPro to peakPro
+            1 -> (offpeakVision ?: offpeakFlash) to (peakVision ?: peakFlash)
+            else -> offpeakFlash to peakFlash
         }
+        return if (peak) pk?.output else off?.output
     }
 }
 
@@ -60,7 +65,6 @@ object DeepSeekPricing {
 
     private const val PRICING_URL = "https://api-docs.deepseek.com/zh-cn/quick_start/pricing/"
     private const val CACHE_TTL_MILLIS = 6L * 3600 * 1000
-    private const val BEIJING_OFFSET_MILLIS = 8L * 3600 * 1000
 
     private val gson = Gson()
     private val client = OkHttpClient.Builder()
@@ -69,7 +73,7 @@ object DeepSeekPricing {
         .writeTimeout(10, TimeUnit.SECONDS)
         .build()
 
-    /** 默认价格：2026-08-17 生效的峰谷定价（官方公告） */
+    /** 默认价格：2026-08-17 生效的峰谷定价（官方公告）；vision 与 flash 同价 */
     val DEFAULT: DeepSeekPricingSnapshot = DeepSeekPricingSnapshot(
         effectiveDateMillis = beijingMillis(2026, 8, 17),
         legacyFlash = Price(0.02, 1.0, 2.0),
@@ -77,13 +81,18 @@ object DeepSeekPricing {
         offpeakFlash = Price(0.05, 1.5, 4.5),
         peakFlash = Price(0.10, 3.0, 9.0),
         offpeakPro = Price(0.15, 4.5, 13.5),
-        peakPro = Price(0.30, 9.0, 27.0)
+        peakPro = Price(0.30, 9.0, 27.0),
+        offpeakVision = Price(0.05, 1.5, 4.5),
+        peakVision = Price(0.10, 3.0, 9.0)
     )
 
-    /** 高峰时段（北京时间，小时，含头不含尾）：9-12、14-18 */
+    /** 高峰时段（北京时间周一至周五 9-12、14-18；含头不含尾） */
     fun isPeakHour(now: Long): Boolean {
-        val hour = ((now + BEIJING_OFFSET_MILLIS) / 3600_000L) % 24
-        return hour in 9..11 || hour in 14..17
+        val cal = Calendar.getInstance(TimeZone.getTimeZone("Asia/Shanghai"))
+        cal.timeInMillis = now
+        val dow = cal.get(Calendar.DAY_OF_WEEK)
+        val hour = cal.get(Calendar.HOUR_OF_DAY)
+        return dow in Calendar.MONDAY..Calendar.FRIDAY && (hour in 9..11 || hour in 14..17)
     }
 
     // ─── 抓取 + 解析 ────────────────────────────────────────────
@@ -118,10 +127,60 @@ object DeepSeekPricing {
         fun num(s: String?): Double? =
             s?.removeSuffix("元")?.trim()?.toDoubleOrNull()
 
-        // ── 峰谷价格表（页面上 deepseek-v4-flash/pro 最后一次出现是在价格表） ──
+        // ── 峰谷价格表 ──
+        // 2026-08 新版页面：按价目分行，行内列为 flash / pro / flash-vision-exp：
+        //   （缓存命中）空闲时段 a b c 高峰时段 d e f
+        //   （缓存未命中）空闲时段 g h i 高峰时段 j k l
+        //   百万tokens输出 空闲时段 m n o 高峰时段 p q r
+        // 旧版页面：按模型分行（deepseek-v4-flash/pro 最后一次出现是价格表），作回退。
         var offpeakFlash: Price? = null; var peakFlash: Price? = null
         var offpeakPro: Price? = null; var peakPro: Price? = null
-        run {
+        var offpeakVision: Price? = null; var peakVision: Price? = null
+
+        fun collect(from: Int): Pair<List<Double>, List<Double>>? {
+            val off = mutableListOf<Double>()
+            val peak = mutableListOf<Double>()
+            var j = from
+            if (tokens.getOrNull(j) == "空闲时段") {
+                j++
+                while (j < tokens.size) {
+                    val n = num(tokens[j]) ?: break
+                    off.add(n); j++
+                }
+            }
+            if (tokens.getOrNull(j) == "高峰时段") {
+                j++
+                while (j < tokens.size) {
+                    val n = num(tokens[j]) ?: break
+                    peak.add(n); j++
+                }
+            }
+            return if (off.isEmpty() || peak.isEmpty()) null else off to peak
+        }
+
+        fun col(values: List<Double>, i: Int): Double? = values.getOrNull(i)
+
+        val hitIdx = tokens.indexOf("（缓存命中）")
+        val missIdx = tokens.indexOf("（缓存未命中）")
+        val outIdx = tokens.indexOf("百万tokens输出")
+        if (hitIdx >= 0 && missIdx >= 0 && outIdx >= 0) {
+            val hit = collect(hitIdx + 1)
+            val miss = collect(missIdx + 1)
+            val out = collect(outIdx + 1)
+            if (hit != null && miss != null && out != null) {
+                offpeakFlash = Price(col(hit.first, 0) ?: 0.0, col(miss.first, 0) ?: 0.0, col(out.first, 0) ?: 0.0)
+                offpeakPro = Price(col(hit.first, 1) ?: 0.0, col(miss.first, 1) ?: 0.0, col(out.first, 1) ?: 0.0)
+                peakFlash = Price(col(hit.second, 0) ?: 0.0, col(miss.second, 0) ?: 0.0, col(out.second, 0) ?: 0.0)
+                peakPro = Price(col(hit.second, 1) ?: 0.0, col(miss.second, 1) ?: 0.0, col(out.second, 1) ?: 0.0)
+                if (hit.first.size >= 3) {
+                    offpeakVision = Price(col(hit.first, 2) ?: 0.0, col(miss.first, 2) ?: 0.0, col(out.first, 2) ?: 0.0)
+                    peakVision = Price(col(hit.second, 2) ?: 0.0, col(miss.second, 2) ?: 0.0, col(out.second, 2) ?: 0.0)
+                }
+            }
+        }
+
+        // 旧版按模型分行的表格回退（flash/pro）
+        if (offpeakFlash == null) run {
             val i = tokens.lastIndexOf("deepseek-v4-flash")
             if (i >= 0 && i + 11 < tokens.size) {
                 // [flash, 空闲时段, a, b, c, 高峰时段, d, e, f, pro, 空闲时段, g, h, i, 高峰时段, j, k, l]
@@ -198,7 +257,9 @@ object DeepSeekPricing {
             offpeakFlash = offpeakFlash,
             peakFlash = peakFlash,
             offpeakPro = offpeakPro,
-            peakPro = peakPro
+            peakPro = peakPro,
+            offpeakVision = offpeakVision,
+            peakVision = peakVision
         )
         // 什么表都没解析出来 → 视为失败
         return if (parsed.hasPeakValley || legacyFlash != null) parsed else null
@@ -215,16 +276,21 @@ object DeepSeekPricing {
 
     /**
      * 生成价格状态行：
-     *  - 峰谷已生效 → "Flash 高峰 ¥9/M" / "Pro 闲时 ¥13.5/M"
+     *  - 峰谷已生效 → "Flash 高峰 ¥9/M" / "Pro 闲时 ¥13.5/M" / "Vision Exp 高峰 ¥9/M"
      *  - 峰谷未生效（已公告） → "8-17起 峰谷定价"
      *  - 仅有平峰价 → "现价 ¥2/M"
      */
-    fun statusLine(pricing: DeepSeekPricingSnapshot, pro: Boolean, now: Long): String {
+    fun statusLine(pricing: DeepSeekPricingSnapshot, modelIndex: Int, now: Long): String {
+        val label = when (modelIndex) {
+            2 -> "Pro"
+            1 -> "Vision Exp"
+            else -> "Flash"
+        }
         if (pricing.isPeakValleyActive(now)) {
-            val price = pricing.outputPrice(pro, isPeakHour(now))
+            val price = pricing.outputPrice(modelIndex, isPeakHour(now))
             if (price != null) {
                 val period = if (isPeakHour(now)) "高峰" else "闲时"
-                return "${if (pro) "Pro" else "Flash"} $period ¥${fmt(price)}/M"
+                return "$label $period ¥${fmt(price)}/M"
             }
         } else if (pricing.effectiveDateMillis != null && now < pricing.effectiveDateMillis) {
             val sdf = SimpleDateFormat("M-d", Locale.US).apply {
@@ -232,7 +298,10 @@ object DeepSeekPricing {
             }
             return "${sdf.format(java.util.Date(pricing.effectiveDateMillis))}起 峰谷定价"
         }
-        val legacy = if (pro) pricing.legacyPro else pricing.legacyFlash
+        val legacy = when (modelIndex) {
+            2 -> pricing.legacyPro
+            else -> pricing.legacyFlash
+        }
         if (legacy != null) return "现价 ¥${fmt(legacy.output)}/M"
         return ""
     }
