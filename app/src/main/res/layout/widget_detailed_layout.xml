@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Detailed Usage widget — dark-only, high-density layout.
-  Mirrors the DeepSeek Platform Usage page: account block → filters → metrics → trend.
-  Every colour is a semantic resource (see colors.xml), no hard-coded hex here.
+  Mirrors the DeepSeek Platform Usage page (account → filters → metrics → trend) plus a
+  CACHE / BILLING block. Every colour is a semantic resource (see colors.xml); no hex here.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/detailed_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="14dp"
+    android:padding="12dp"
     android:background="@drawable/widget_detailed_bg">
 
     <!-- Header: title (→ open portal) · updated time · refresh -->
@@ -63,7 +63,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_marginTop="8dp">
+        android:layout_marginTop="6dp">
 
         <LinearLayout
             android:layout_width="0dp"
@@ -83,7 +83,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="¥--"
-                android:textSize="20sp"
+                android:textSize="19sp"
                 android:textStyle="bold"
                 android:textColor="@color/widget_dark_accent" />
         </LinearLayout>
@@ -121,7 +121,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="¥••••••"
-                android:textSize="20sp"
+                android:textSize="19sp"
                 android:textStyle="bold"
                 android:textColor="@color/widget_dark_text_primary" />
         </LinearLayout>
@@ -131,8 +131,8 @@
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:background="@color/widget_dark_divider"
-        android:layout_marginTop="10dp"
-        android:layout_marginBottom="10dp" />
+        android:layout_marginTop="6dp"
+        android:layout_marginBottom="6dp" />
 
     <!-- Filters: TIME · API KEY (each cycles on tap, state is per-widget) -->
     <LinearLayout
@@ -146,7 +146,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical"
-            android:padding="4dp">
+            android:padding="3dp">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -173,7 +173,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical"
-            android:padding="4dp">
+            android:padding="3dp">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -195,12 +195,12 @@
         </LinearLayout>
     </LinearLayout>
 
-    <!-- Filtered metrics: COST · REQUESTS · TOKENS -->
+    <!-- Filtered metrics (official): COST · REQUESTS · TOKENS -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_marginTop="6dp">
+        android:layout_marginTop="5dp">
 
         <LinearLayout
             android:layout_width="0dp"
@@ -278,21 +278,227 @@
         </LinearLayout>
     </LinearLayout>
 
-    <!-- Cost trend (daily bars, filtered) -->
-    <TextView
-        android:layout_width="wrap_content"
+    <!-- Cost trend: label + summary, then bars with date labels -->
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="COST TREND"
-        android:textSize="9sp"
-        android:textColor="@color/widget_dark_text_tertiary"
-        android:layout_marginTop="10dp" />
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginTop="8dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="COST TREND"
+            android:textSize="9sp"
+            android:textColor="@color/widget_dark_text_tertiary" />
+
+        <TextView
+            android:id="@+id/tv_d_trend_summary"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="--"
+            android:textSize="9sp"
+            android:textColor="@color/widget_dark_text_secondary"
+            android:gravity="end"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:layout_marginStart="6dp" />
+    </LinearLayout>
 
     <ImageView
         android:id="@+id/iv_d_trend"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:minHeight="40dp"
+        android:minHeight="44dp"
         android:scaleType="fitXY"
         android:contentDescription="cost trend" />
+
+    <!-- CACHE / BILLING — official token split, ≈ estimated cost composition -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="CACHE / BILLING"
+        android:textSize="9sp"
+        android:textColor="@color/widget_dark_text_tertiary"
+        android:layout_marginTop="8dp" />
+
+    <!-- CACHE HIT -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="3dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1.30"
+            android:text="CACHE HIT"
+            android:textSize="9sp"
+            android:textColor="@color/widget_dark_text_secondary" />
+
+        <TextView
+            android:id="@+id/tv_d_hit_tok"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1.00"
+            android:text="--"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:textColor="@color/widget_dark_text_primary"
+            android:gravity="end"
+            android:singleLine="true" />
+
+        <TextView
+            android:id="@+id/tv_d_hit_rate"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.85"
+            android:text="--"
+            android:textSize="10sp"
+            android:textColor="@color/widget_dark_text_secondary"
+            android:gravity="end"
+            android:singleLine="true" />
+
+        <TextView
+            android:id="@+id/tv_d_hit_cost"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1.25"
+            android:text="--"
+            android:textSize="10sp"
+            android:textColor="@color/widget_dark_text_secondary"
+            android:gravity="end"
+            android:singleLine="true" />
+    </LinearLayout>
+
+    <!-- CACHE MISS -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="2dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1.30"
+            android:text="CACHE MISS"
+            android:textSize="9sp"
+            android:textColor="@color/widget_dark_text_secondary" />
+
+        <TextView
+            android:id="@+id/tv_d_miss_tok"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1.00"
+            android:text="--"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:textColor="@color/widget_dark_text_primary"
+            android:gravity="end"
+            android:singleLine="true" />
+
+        <TextView
+            android:id="@+id/tv_d_miss_rate"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.85"
+            android:text="--"
+            android:textSize="10sp"
+            android:textColor="@color/widget_dark_text_secondary"
+            android:gravity="end"
+            android:singleLine="true" />
+
+        <TextView
+            android:id="@+id/tv_d_miss_cost"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1.25"
+            android:text="--"
+            android:textSize="10sp"
+            android:textColor="@color/widget_dark_text_secondary"
+            android:gravity="end"
+            android:singleLine="true" />
+    </LinearLayout>
+
+    <!-- OUTPUT -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="2dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1.30"
+            android:text="OUTPUT"
+            android:textSize="9sp"
+            android:textColor="@color/widget_dark_text_secondary" />
+
+        <TextView
+            android:id="@+id/tv_d_out_tok"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1.00"
+            android:text="--"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:textColor="@color/widget_dark_text_primary"
+            android:gravity="end"
+            android:singleLine="true" />
+
+        <TextView
+            android:id="@+id/tv_d_out_rate"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.85"
+            android:text=""
+            android:textSize="10sp"
+            android:textColor="@color/widget_dark_text_secondary"
+            android:gravity="end"
+            android:singleLine="true" />
+
+        <TextView
+            android:id="@+id/tv_d_out_cost"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1.25"
+            android:text="--"
+            android:textSize="10sp"
+            android:textColor="@color/widget_dark_text_secondary"
+            android:gravity="end"
+            android:singleLine="true" />
+    </LinearLayout>
+
+    <!-- CACHE SAVED -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="3dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="CACHE SAVED"
+            android:textSize="9sp"
+            android:textColor="@color/widget_dark_text_tertiary" />
+
+        <TextView
+            android:id="@+id/tv_d_saved"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="--"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:textColor="@color/widget_dark_text_primary"
+            android:gravity="end"
+            android:singleLine="true" />
+    </LinearLayout>
 </LinearLayout>

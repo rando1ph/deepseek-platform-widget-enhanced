@@ -297,7 +297,18 @@ class DeepSeekApiClient(
         )
     }
 
-    // ─── 详细用量（保留 API Key × 天 维度）──────────────────────
+    // ─── 详细用量（保留 API Key × Model × 天 维度）──────────────
+
+    /** Accumulator for one (key × model × day) slice while merging the amount + cost endpoints. */
+    private data class UsageAccKey(val keyId: String, val model: String, val day: Long)
+
+    private class UsageAcc {
+        var hit = 0L
+        var miss = 0L
+        var out = 0L
+        var req = 0L
+        var cost = 0.0
+    }
 
     /**
      * Fetch the widest supported window (day-aligned in the usage timezone, default 30 days)
@@ -336,14 +347,12 @@ class DeepSeekApiClient(
             val daySet = HashSet(dayList)
 
             val keyOrder = LinkedHashMap<String, KeyInfo>()
-            val costMap = HashMap<String, HashMap<Long, Double>>()
-            val reqMap = HashMap<String, HashMap<Long, Long>>()
-            val tokMap = HashMap<String, HashMap<Long, Long>>()
+            val acc = HashMap<UsageAccKey, UsageAcc>()
 
             var amountError: String? = null
             var costError: String? = null
 
-            // ── amount: per (api_key, model, day) token / request counts ──
+            // ── amount: per (api_key, model, day) hit / miss / output tokens ──
             try {
                 val body = execute("$AMOUNT_URL?start=$windowStart&end=$windowEnd&tz=$tzOffsetSec")
                 val resp = gson.fromJson(body, UsageByKeyAmountResponse::class.java)
@@ -352,6 +361,7 @@ class DeepSeekApiClient(
                 for (s in biz.series ?: emptyList()) {
                     val key = parseKey(s.apiKey)
                     keyOrder[key.id] = key
+                    val model = s.model ?: continue
                     for (b in s.buckets ?: emptyList()) {
                         val day = localDayStart(b.time ?: continue)
                         if (day !in daySet) continue
@@ -359,11 +369,14 @@ class DeepSeekApiClient(
                         val hit = u.cacheHitToken?.toLongOrNull() ?: 0L
                         val miss = u.cacheMissToken?.toLongOrNull() ?: 0L
                         val prompt = u.promptToken?.toLongOrNull() ?: 0L
-                        val input = if (hit + miss > 0) hit + miss else prompt
-                        val tokens = input + (u.responseToken?.toLongOrNull() ?: 0L)
-                        val requests = u.request?.toLongOrNull() ?: 0L
-                        tokMap.getOrPut(key.id) { HashMap() }.let { m -> m[day] = (m[day] ?: 0L) + tokens }
-                        reqMap.getOrPut(key.id) { HashMap() }.let { m -> m[day] = (m[day] ?: 0L) + requests }
+                        // The new endpoint reports HIT/MISS separately; only if a bare
+                        // PROMPT_TOKEN shows up do we fold it into miss (never double-counted).
+                        val effectiveMiss = if (hit + miss > 0L) miss else miss + prompt
+                        val a = acc.getOrPut(UsageAccKey(key.id, model, day)) { UsageAcc() }
+                        a.hit += hit
+                        a.miss += effectiveMiss
+                        a.out += u.responseToken?.toLongOrNull() ?: 0L
+                        a.req += u.request?.toLongOrNull() ?: 0L
                     }
                 }
             } catch (e: Exception) {
@@ -371,7 +384,7 @@ class DeepSeekApiClient(
                 amountError = e.message ?: "未知错误"
             }
 
-            // ── cost: per (api_key, model, day) CNY ──
+            // ── cost: per (api_key, model, day) CNY (official) ──
             try {
                 val body = execute("$COST_URL?start=$windowStart&end=$windowEnd&tz=$tzOffsetSec")
                 val resp = gson.fromJson(body, UsageByKeyCostResponse::class.java)
@@ -381,11 +394,12 @@ class DeepSeekApiClient(
                 for (s in entry?.series ?: emptyList()) {
                     val key = parseKey(s.apiKey)
                     keyOrder[key.id] = key
+                    val model = s.model ?: continue
                     for (b in s.buckets ?: emptyList()) {
                         val day = localDayStart(b.time ?: continue)
                         if (day !in daySet) continue
                         val cost = b.cost?.toDoubleOrNull() ?: 0.0
-                        costMap.getOrPut(key.id) { HashMap() }.let { m -> m[day] = (m[day] ?: 0.0) + cost }
+                        acc.getOrPut(UsageAccKey(key.id, model, day)) { UsageAcc() }.cost += cost
                     }
                 }
             } catch (e: Exception) {
@@ -398,20 +412,16 @@ class DeepSeekApiClient(
             }
 
             val keys = keyOrder.values.sortedBy { it.name.lowercase() }
+            val knownKeyIds = keys.mapTo(HashSet()) { it.id }
             val records = ArrayList<UsageRecord>()
-            for (k in keys) {
-                val cm = costMap[k.id]
-                val rm = reqMap[k.id]
-                val tm = tokMap[k.id]
-                if (cm == null && rm == null && tm == null) continue
-                for (d in dayList) {
-                    val c = cm?.get(d) ?: 0.0
-                    val r = rm?.get(d) ?: 0L
-                    val tk = tm?.get(d) ?: 0L
-                    if (c == 0.0 && r == 0L && tk == 0L) continue
-                    records.add(UsageRecord(k.id, d, c, r, tk))
-                }
+            for ((k, a) in acc) {
+                // Defensive: skip slices whose key vanished between the two calls.
+                if (k.keyId !in knownKeyIds) continue
+                if (a.hit == 0L && a.miss == 0L && a.out == 0L && a.req == 0L && a.cost == 0.0) continue
+                records.add(UsageRecord(k.keyId, k.model, k.day, a.cost, a.req, a.hit, a.miss, a.out))
             }
+            // Stable ordering (key, day, model) so rendering and tests are deterministic.
+            records.sortWith(compareBy({ it.keyId }, { it.dayStart }, { it.model }))
 
             Log.d("DS_DETAIL", "keys=${keys.size}, records=${records.size}, days=${dayList.size}")
             DetailedUsageData(

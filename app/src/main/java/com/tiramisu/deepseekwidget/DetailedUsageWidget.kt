@@ -26,11 +26,13 @@ import java.util.Locale
 /**
  * Detailed Usage widget — a denser, dark-only companion to the compact DeepSeekWidget.
  *
- * Information architecture mirrors the official DeepSeek Platform Usage page:
+ * Information architecture mirrors the official DeepSeek Platform Usage page, plus a
+ * CACHE / BILLING block built from the amount endpoint's hit/miss/output split:
  *   BALANCE / TOTAL COST (account-level, eyes-toggle on Total Cost)
  *   TIME + API KEY (per-widget filters)
- *   COST / REQUESTS / TOKENS (filtered)
- *   COST TREND (daily bar chart, filtered)
+ *   COST / REQUESTS / TOKENS (official, filtered)
+ *   COST TREND (daily bars + date labels + summary, filtered)
+ *   CACHE / BILLING (official token split; ≈ estimated cost composition)
  *
  * The whole payload is fetched once over a 30-day window with all API keys (see
  * [DeepSeekApiClient.fetchDetailedUsage]); every filter is then a render-time slice, so
@@ -40,10 +42,11 @@ class DetailedUsageWidget : AppWidgetProvider() {
 
     override fun onUpdate(context: Context, mgr: AppWidgetManager, ids: IntArray) {
         val data = loadData(context)
+        val pricing = loadPricing(context)
         for (id in ids) {
             val view = RemoteViews(context.packageName, R.layout.widget_detailed_layout)
             if (data != null) {
-                render(context, view, id, data, "")
+                render(context, view, id, data, "", pricing)
             } else {
                 renderPlaceholder(context, view, id)
             }
@@ -85,7 +88,14 @@ class DetailedUsageWidget : AppWidgetProvider() {
 
     // ─── Rendering ─────────────────────────────────────────────
 
-    private fun render(context: Context, view: RemoteViews, id: Int, data: DetailedUsageData, status: String) {
+    private fun render(
+        context: Context,
+        view: RemoteViews,
+        id: Int,
+        data: DetailedUsageData,
+        status: String,
+        pricing: DeepSeekPricingSnapshot
+    ) {
         val ok = data.isAvailable && data.error == null
 
         // Header
@@ -96,7 +106,7 @@ class DetailedUsageWidget : AppWidgetProvider() {
         )
         view.setTextViewText(R.id.tv_d_status, if (data.error != null) "⚠ ${data.error}" else status)
 
-        // Account-level block
+        // Account-level block (filter-independent)
         view.setTextViewText(R.id.tv_d_balance, if (ok) DetailedUsageData.formatMoney(data.balance) else "--")
 
         val totalVisible = isTotalVisible(context, id)
@@ -117,12 +127,35 @@ class DetailedUsageWidget : AppWidgetProvider() {
         view.setTextViewText(R.id.tv_d_time, range.label)
         view.setTextViewText(R.id.tv_d_key, data.keyLabel(keyId))
 
-        // Filtered metrics (Time + API-Key applied jointly)
-        val stats = data.statsFor(keyId, range.days)
+        // Filtered metrics — Time + API-Key applied jointly (official values)
+        val stats = data.statsFor(keyId, range.days, pricing)
         view.setTextViewText(R.id.tv_d_cost, if (ok) DetailedUsageData.formatMoney(stats.cost) else "--")
         view.setTextViewText(R.id.tv_d_requests, if (ok) DetailedUsageData.formatRequests(stats.requests) else "--")
         view.setTextViewText(R.id.tv_d_tokens, if (ok) DetailedUsageData.formatTokens(stats.tokens) else "--")
-        view.setImageViewBitmap(R.id.iv_d_trend, buildTrendBitmap(if (ok) stats.trend else emptyList()))
+
+        // Cost trend: summary + bars with date labels
+        val summary = if (ok) {
+            "${range.shortLabel} · ${DetailedUsageData.formatMoney(stats.cost)} · ${DetailedUsageData.formatTokens(stats.tokens)} tokens"
+        } else "--"
+        view.setTextViewText(R.id.tv_d_trend_summary, summary)
+        view.setImageViewBitmap(
+            R.id.iv_d_trend,
+            buildTrendBitmap(
+                if (ok) stats.trend else emptyList(),
+                if (ok) stats.trendDays else emptyList()
+            )
+        )
+
+        // CACHE / BILLING — official token split; ≈ estimated cost composition
+        view.setTextViewText(R.id.tv_d_hit_tok, tokenText(ok, stats.hitTokens))
+        view.setTextViewText(R.id.tv_d_hit_rate, rateText(ok, stats.hitRatePercent))
+        view.setTextViewText(R.id.tv_d_hit_cost, estimateText(ok, stats.estimatedHitCost))
+        view.setTextViewText(R.id.tv_d_miss_tok, tokenText(ok, stats.missTokens))
+        view.setTextViewText(R.id.tv_d_miss_rate, rateText(ok, stats.missRatePercent))
+        view.setTextViewText(R.id.tv_d_miss_cost, estimateText(ok, stats.estimatedMissCost))
+        view.setTextViewText(R.id.tv_d_out_tok, tokenText(ok, stats.outTokens))
+        view.setTextViewText(R.id.tv_d_out_cost, estimateText(ok, stats.estimatedOutCost))
+        view.setTextViewText(R.id.tv_d_saved, estimateText(ok, stats.estimatedCacheSaved))
 
         // Clicks
         view.setOnClickPendingIntent(R.id.tv_d_title, openPi(context, id))
@@ -144,7 +177,17 @@ class DetailedUsageWidget : AppWidgetProvider() {
         view.setTextViewText(R.id.tv_d_cost, "¥--")
         view.setTextViewText(R.id.tv_d_requests, "--")
         view.setTextViewText(R.id.tv_d_tokens, "--")
-        view.setImageViewBitmap(R.id.iv_d_trend, buildTrendBitmap(emptyList()))
+        view.setTextViewText(R.id.tv_d_trend_summary, "--")
+        view.setImageViewBitmap(R.id.iv_d_trend, buildTrendBitmap(emptyList(), emptyList()))
+        view.setTextViewText(R.id.tv_d_hit_tok, "--")
+        view.setTextViewText(R.id.tv_d_hit_rate, "--")
+        view.setTextViewText(R.id.tv_d_hit_cost, "--")
+        view.setTextViewText(R.id.tv_d_miss_tok, "--")
+        view.setTextViewText(R.id.tv_d_miss_rate, "--")
+        view.setTextViewText(R.id.tv_d_miss_cost, "--")
+        view.setTextViewText(R.id.tv_d_out_tok, "--")
+        view.setTextViewText(R.id.tv_d_out_cost, "--")
+        view.setTextViewText(R.id.tv_d_saved, "--")
         view.setOnClickPendingIntent(R.id.tv_d_title, openPi(context, id))
         view.setOnClickPendingIntent(R.id.iv_d_refresh, broadcastPi(context, ACTION_REFRESH, id, SLOT_REFRESH))
         view.setOnClickPendingIntent(R.id.row_d_time, broadcastPi(context, ACTION_CYCLE_TIME, id, SLOT_TIME))
@@ -152,11 +195,22 @@ class DetailedUsageWidget : AppWidgetProvider() {
         view.setOnClickPendingIntent(R.id.iv_d_eye, broadcastPi(context, ACTION_TOGGLE_TOTAL, id, SLOT_EYE))
     }
 
-    // ─── Trend bitmap ──────────────────────────────────────────
+    private fun tokenText(ok: Boolean, value: Long): String =
+        if (ok) DetailedUsageData.formatTokens(value) else "--"
 
-    private fun buildTrendBitmap(values: List<Double>): Bitmap {
+    private fun rateText(ok: Boolean, value: String): String =
+        if (!ok || value == "--") "--" else "$value%"
+
+    private fun estimateText(ok: Boolean, value: Double?): String =
+        if (ok) DetailedUsageData.formatEstimate(value) else "--"
+
+    // ─── Trend bitmap (bars + date labels) ─────────────────────
+
+    private fun buildTrendBitmap(values: List<Double>, days: List<Long>): Bitmap {
         val width = 600
-        val height = 200
+        val height = 240
+        val labelHeight = 46f
+        val barsBottom = height - labelHeight
         val bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bmp)
         canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
@@ -167,19 +221,47 @@ class DetailedUsageWidget : AppWidgetProvider() {
         val slot = width.toFloat() / n
         val gap = (slot * 0.30f).coerceAtLeast(1.5f)
         val barW = (slot - gap).coerceAtLeast(1f)
-        val baseline = height.toFloat()
         val radius = (barW * 0.35f).coerceAtMost(6f)
 
-        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        val barPaint = Paint(Paint.ANTI_ALIAS_FLAG)
         val accent = 0xFF4D6BFE.toInt()
         val dim = 0xFF33406E.toInt()
         for (i in 0 until n) {
             val v = values[i]
             val ratio = if (max > 0.0) (v / max).toFloat().coerceIn(0f, 1f) else 0f
-            val barH = if (v > 0.0) (ratio * (height - 10f)).coerceAtLeast(8f) else 4f
+            val barH = if (v > 0.0) (ratio * (barsBottom - 10f)).coerceAtLeast(8f) else 4f
             val left = i * slot + gap / 2f
-            paint.color = if (v > 0.0) accent else dim
-            canvas.drawRoundRect(RectF(left, baseline - barH, left + barW, baseline), radius, radius, paint)
+            barPaint.color = if (v > 0.0) accent else dim
+            canvas.drawRoundRect(RectF(left, barsBottom - barH, left + barW, barsBottom), radius, radius, barPaint)
+        }
+
+        // Date labels: every bar for ≤7 days, sparse (start/middle…/end) beyond that.
+        val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = 0xFFAAAAAA.toInt()
+            textSize = 22f
+        }
+        val labelIndices: List<Int> = when {
+            n <= 1 -> listOf(0)
+            n <= 7 -> (0 until n).toList()
+            else -> {
+                val step = ((n - 1) / 4).coerceAtLeast(1)
+                val idx = ArrayList<Int>()
+                var i = 0
+                while (i < n) {
+                    idx.add(i)
+                    i += step
+                }
+                if (idx.last() != n - 1) idx.add(n - 1)
+                idx
+            }
+        }
+        val sdf = SimpleDateFormat("M/d", Locale.US)
+        for (i in labelIndices) {
+            if (i < 0 || i >= n || i >= days.size) continue
+            val text = if (n <= 1) "Today" else sdf.format(Date(days[i] * 1000L))
+            val textWidth = textPaint.measureText(text)
+            val x = (i * slot + (slot - textWidth) / 2f).coerceIn(0f, width - textWidth)
+            canvas.drawText(text, x, height - 14f, textPaint)
         }
         return bmp
     }
@@ -188,20 +270,22 @@ class DetailedUsageWidget : AppWidgetProvider() {
 
     private fun renderAll(context: Context, data: DetailedUsageData) {
         saveData(context, data)
+        val pricing = loadPricing(context)
         val mgr = AppWidgetManager.getInstance(context)
         for (id in mgr.getAppWidgetIds(ComponentName(context, DetailedUsageWidget::class.java))) {
             val view = RemoteViews(context.packageName, R.layout.widget_detailed_layout)
-            render(context, view, id, data, "")
+            render(context, view, id, data, "", pricing)
             mgr.updateAppWidget(id, view)
         }
     }
 
     private fun rerenderAll(context: Context) {
         val data = loadData(context) ?: return
+        val pricing = loadPricing(context)
         val mgr = AppWidgetManager.getInstance(context)
         for (id in mgr.getAppWidgetIds(ComponentName(context, DetailedUsageWidget::class.java))) {
             val view = RemoteViews(context.packageName, R.layout.widget_detailed_layout)
-            render(context, view, id, data, "")
+            render(context, view, id, data, "", pricing)
             mgr.updateAppWidget(id, view)
         }
     }
@@ -209,10 +293,11 @@ class DetailedUsageWidget : AppWidgetProvider() {
     private fun triggerRefresh(context: Context) {
         val data = loadData(context)
         if (data != null) {
+            val pricing = loadPricing(context)
             val mgr = AppWidgetManager.getInstance(context)
             for (id in mgr.getAppWidgetIds(ComponentName(context, DetailedUsageWidget::class.java))) {
                 val view = RemoteViews(context.packageName, R.layout.widget_detailed_layout)
-                render(context, view, id, data, "刷新中…")
+                render(context, view, id, data, "刷新中…", pricing)
                 mgr.updateAppWidget(id, view)
             }
         }
@@ -222,6 +307,13 @@ class DetailedUsageWidget : AppWidgetProvider() {
                 .build()
         )
     }
+
+    private fun loadPricing(context: Context): DeepSeekPricingSnapshot =
+        try {
+            DeepSeekPricing.loadCached(context)
+        } catch (_: Exception) {
+            DeepSeekPricing.DEFAULT
+        }
 
     // ─── PendingIntents ────────────────────────────────────────
 
@@ -290,7 +382,7 @@ class DetailedUsageWidget : AppWidgetProvider() {
 
     // ─── Constants ─────────────────────────────────────────────
 
-    private data class TimeRangeOption(val label: String, val days: Int)
+    private data class TimeRangeOption(val label: String, val shortLabel: String, val days: Int)
 
     companion object {
         /** Called by [WidgetUpdateWorker] to push freshly fetched data to every instance. */
@@ -312,11 +404,11 @@ class DetailedUsageWidget : AppWidgetProvider() {
         private const val KEY_DETAILED_DATA = "detailed_data"
         private const val USAGE_URL = "https://platform.deepseek.com/usage"
 
-        /** 24h → 7d → 30d (cycle order); 7d is the default. */
+        /** Today → 7d → 30d (cycle order); 7d is the default. */
         private val RANGES = listOf(
-            TimeRangeOption("Today", 1),
-            TimeRangeOption("Last 7 days", 7),
-            TimeRangeOption("Last 30 days", 30)
+            TimeRangeOption("Today", "TODAY", 1),
+            TimeRangeOption("Last 7 days", "7 DAYS", 7),
+            TimeRangeOption("Last 30 days", "30 DAYS", 30)
         )
         private const val DEFAULT_RANGE_INDEX = 1
     }

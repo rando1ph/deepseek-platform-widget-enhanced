@@ -51,14 +51,18 @@ data class DeepSeekPricingSnapshot(
         hasPeakValley && (effectiveDateMillis == null || now >= effectiveDateMillis)
 
     /** 模型索引 0=Flash 1=Flash Vision Exp 2=Pro；vision 缺价格时回退 Flash。 */
-    fun outputPrice(modelIndex: Int, peak: Boolean): Double? {
+    fun priceFor(modelIndex: Int, peak: Boolean): Price? {
         val (off, pk) = when (modelIndex) {
             2 -> offpeakPro to peakPro
             1 -> (offpeakVision ?: offpeakFlash) to (peakVision ?: peakFlash)
             else -> offpeakFlash to peakFlash
         }
-        return if (peak) pk?.output else off?.output
+        return if (peak) pk else off
     }
+
+    /** 模型索引 0=Flash 1=Flash Vision Exp 2=Pro；vision 缺价格时回退 Flash。 */
+    fun outputPrice(modelIndex: Int, peak: Boolean): Double? =
+        priceFor(modelIndex, peak)?.output
 }
 
 object DeepSeekPricing {

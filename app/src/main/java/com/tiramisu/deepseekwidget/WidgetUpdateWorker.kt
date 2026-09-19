@@ -44,6 +44,11 @@ class WidgetUpdateWorker(
         }
 
         return try {
+            if (hasDetailed) {
+                // Refresh the pricing table (TTL 6h) so the widget's ≈ estimates follow official
+                // price changes. Never throws — falls back to the cached/default table.
+                DeepSeekPricing.ensureFresh(context)
+            }
             val client = DeepSeekApiClient(token, DeepSeekWidget.getUsageTimeZone(context))
             if (hasCompact) {
                 DeepSeekWidget.updateWidgets(context, client.fetchAll())
