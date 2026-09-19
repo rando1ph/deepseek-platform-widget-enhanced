@@ -1,5 +1,7 @@
 package com.tiramisu.deepseekwidget
 
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Context
 import androidx.work.Worker
 import androidx.work.WorkerParameters
@@ -9,6 +11,10 @@ import androidx.work.WorkerParameters
  *
  * Uses account Bearer Token (from email+password login) in preference to
  * legacy API Key. If neither is configured, skips the update silently.
+ *
+ * Updates both the compact [DeepSeekWidget] and the [DetailedUsageWidget]. Each is only
+ * fetched when at least one of its instances is on the home screen, so we never add usage
+ * requests that nothing consumes.
  */
 class WidgetUpdateWorker(
     appContext: Context,
@@ -24,16 +30,35 @@ class WidgetUpdateWorker(
             return Result.success() // No auth configured yet
         }
 
+        val context = applicationContext
+        val manager = AppWidgetManager.getInstance(context)
+        val hasCompact = manager.getAppWidgetIds(
+            ComponentName(context, DeepSeekWidget::class.java)
+        ).isNotEmpty()
+        val hasDetailed = manager.getAppWidgetIds(
+            ComponentName(context, DetailedUsageWidget::class.java)
+        ).isNotEmpty()
+
+        if (!hasCompact && !hasDetailed) {
+            return Result.success()
+        }
+
         return try {
-            val client = DeepSeekApiClient(token, DeepSeekWidget.getUsageTimeZone(applicationContext))
-            val data = client.fetchAll()
-            DeepSeekWidget.updateWidgets(applicationContext, data)
+            val client = DeepSeekApiClient(token, DeepSeekWidget.getUsageTimeZone(context))
+            if (hasCompact) {
+                DeepSeekWidget.updateWidgets(context, client.fetchAll())
+            }
+            if (hasDetailed) {
+                DetailedUsageWidget.updateWidgets(context, client.fetchDetailedUsage())
+            }
             Result.success()
         } catch (e: Exception) {
-            DeepSeekWidget.updateWidgets(
-                applicationContext,
-                WidgetDisplayData(error = e.message)
-            )
+            if (hasCompact) {
+                DeepSeekWidget.updateWidgets(context, WidgetDisplayData(error = e.message))
+            }
+            if (hasDetailed) {
+                DetailedUsageWidget.updateWidgets(context, DetailedUsageData(error = e.message))
+            }
             Result.retry()
         }
     }

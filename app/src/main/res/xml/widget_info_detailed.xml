@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Detailed Usage widget metadata: 4×5 recommended, resizable. Kept dark-only.
+  Shares the login config activity with the compact widget.
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="250dp"
+    android:minHeight="250dp"
+    android:minResizeWidth="180dp"
+    android:minResizeHeight="140dp"
+    android:targetCellWidth="4"
+    android:targetCellHeight="5"
+    android:updatePeriodMillis="1800000"
+    android:configure="com.tiramisu.deepseekwidget.DeepSeekWidgetConfig"
+    android:initialLayout="@layout/widget_detailed_layout"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen"
+    android:description="@string/widget_detailed_description" />

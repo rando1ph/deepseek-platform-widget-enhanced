@@ -92,7 +92,10 @@ class DeepSeekApiClient(
 
     private data class SummaryResult(
         val balance: String = "0.00",
-        val totalAvailableTokens: Long = 0
+        val totalAvailableTokens: Long = 0,
+        /** Account-level historical cumulative cost (official "Total cost"), CNY. */
+        val totalCost: String = "0.00",
+        val hasTotalCost: Boolean = false
     )
 
     private fun fetchSummary(): SummaryResult {
@@ -106,7 +109,16 @@ class DeepSeekApiClient(
 
         val totalAvailableTokens = biz.totalAvailableTokenEstimation?.toLongOrNull() ?: 0L
 
-        return SummaryResult(balance, totalAvailableTokens)
+        // 2026-08 platform: historical cumulative cost lives in total_costs
+        // (monthly_costs is deprecated). Kept account-level, filter-independent.
+        val totalCostValue = biz.totalCosts?.firstOrNull()?.amount?.toDoubleOrNull()
+
+        return SummaryResult(
+            balance = balance,
+            totalAvailableTokens = totalAvailableTokens,
+            totalCost = totalCostValue?.let { "%.2f".format(it) } ?: "0.00",
+            hasTotalCost = totalCostValue != null
+        )
     }
 
     // ─── 本月 + 今日用量（新 by_api_key 端点，时区感知）──────────
@@ -283,6 +295,166 @@ class DeepSeekApiClient(
                 monthlyTokens = proMonthTk
             )
         )
+    }
+
+    // ─── 详细用量（保留 API Key × 天 维度）──────────────────────
+
+    /**
+     * Fetch the widest supported window (day-aligned in the usage timezone, default 30 days)
+     * with ALL API keys kept as a first-class dimension.
+     *
+     * The Detailed Usage widget renders Time / API-Key filters purely from this payload, so
+     * cycling a filter or toggling Total-Cost visibility never triggers a new request.
+     *
+     * Tokens = PROMPT_CACHE_HIT + PROMPT_CACHE_MISS + RESPONSE (REQUEST excluded), matching
+     * the definition already used by the compact widget and the official usage page.
+     */
+    fun fetchDetailedUsage(windowDays: Int = 30): DetailedUsageData {
+        return try {
+            val summary = fetchSummary()
+            val now = System.currentTimeMillis()
+            val tzOffsetSec = usageTimeZone.getOffset(now) / 1000
+
+            // Day-aligned window: [today-(N-1) .. today], each entry a local midnight.
+            val dayList = ArrayList<Long>(windowDays)
+            run {
+                val c = Calendar.getInstance(usageTimeZone)
+                c.timeInMillis = now
+                c.set(Calendar.HOUR_OF_DAY, 0)
+                c.set(Calendar.MINUTE, 0)
+                c.set(Calendar.SECOND, 0)
+                c.set(Calendar.MILLISECOND, 0)
+                c.add(Calendar.DAY_OF_MONTH, -(windowDays - 1))
+                repeat(windowDays) {
+                    dayList.add(c.timeInMillis / 1000)
+                    c.add(Calendar.DAY_OF_MONTH, 1)
+                }
+            }
+            val windowStart = dayList.first()
+            // Exclusive end = local midnight of tomorrow (last listed day + 1).
+            val windowEnd = dayList.last() + 86_400L
+            val daySet = HashSet(dayList)
+
+            val keyOrder = LinkedHashMap<String, KeyInfo>()
+            val costMap = HashMap<String, HashMap<Long, Double>>()
+            val reqMap = HashMap<String, HashMap<Long, Long>>()
+            val tokMap = HashMap<String, HashMap<Long, Long>>()
+
+            var amountError: String? = null
+            var costError: String? = null
+
+            // ── amount: per (api_key, model, day) token / request counts ──
+            try {
+                val body = execute("$AMOUNT_URL?start=$windowStart&end=$windowEnd&tz=$tzOffsetSec")
+                val resp = gson.fromJson(body, UsageByKeyAmountResponse::class.java)
+                if (resp.code != 0) throw Exception("code=${resp.code} ${resp.msg}")
+                val biz = resp.data?.bizData ?: throw Exception("biz_data 为空: ${body.take(200)}")
+                for (s in biz.series ?: emptyList()) {
+                    val key = parseKey(s.apiKey)
+                    keyOrder[key.id] = key
+                    for (b in s.buckets ?: emptyList()) {
+                        val day = localDayStart(b.time ?: continue)
+                        if (day !in daySet) continue
+                        val u = b.usage ?: continue
+                        val hit = u.cacheHitToken?.toLongOrNull() ?: 0L
+                        val miss = u.cacheMissToken?.toLongOrNull() ?: 0L
+                        val prompt = u.promptToken?.toLongOrNull() ?: 0L
+                        val input = if (hit + miss > 0) hit + miss else prompt
+                        val tokens = input + (u.responseToken?.toLongOrNull() ?: 0L)
+                        val requests = u.request?.toLongOrNull() ?: 0L
+                        tokMap.getOrPut(key.id) { HashMap() }.let { m -> m[day] = (m[day] ?: 0L) + tokens }
+                        reqMap.getOrPut(key.id) { HashMap() }.let { m -> m[day] = (m[day] ?: 0L) + requests }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.w("DS_API", "detailed amount failed", e)
+                amountError = e.message ?: "未知错误"
+            }
+
+            // ── cost: per (api_key, model, day) CNY ──
+            try {
+                val body = execute("$COST_URL?start=$windowStart&end=$windowEnd&tz=$tzOffsetSec")
+                val resp = gson.fromJson(body, UsageByKeyCostResponse::class.java)
+                if (resp.code != 0) throw Exception("code=${resp.code} ${resp.msg}")
+                val biz = resp.data?.bizData ?: throw Exception("biz_data 为空: ${body.take(200)}")
+                val entry = biz.data?.firstOrNull()
+                for (s in entry?.series ?: emptyList()) {
+                    val key = parseKey(s.apiKey)
+                    keyOrder[key.id] = key
+                    for (b in s.buckets ?: emptyList()) {
+                        val day = localDayStart(b.time ?: continue)
+                        if (day !in daySet) continue
+                        val cost = b.cost?.toDoubleOrNull() ?: 0.0
+                        costMap.getOrPut(key.id) { HashMap() }.let { m -> m[day] = (m[day] ?: 0.0) + cost }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.w("DS_API", "detailed cost failed", e)
+                costError = e.message ?: "未知错误"
+            }
+
+            if (amountError != null && costError != null) {
+                throw Exception("用量接口失败: amount[$amountError] cost[$costError]")
+            }
+
+            val keys = keyOrder.values.sortedBy { it.name.lowercase() }
+            val records = ArrayList<UsageRecord>()
+            for (k in keys) {
+                val cm = costMap[k.id]
+                val rm = reqMap[k.id]
+                val tm = tokMap[k.id]
+                if (cm == null && rm == null && tm == null) continue
+                for (d in dayList) {
+                    val c = cm?.get(d) ?: 0.0
+                    val r = rm?.get(d) ?: 0L
+                    val tk = tm?.get(d) ?: 0L
+                    if (c == 0.0 && r == 0L && tk == 0L) continue
+                    records.add(UsageRecord(k.id, d, c, r, tk))
+                }
+            }
+
+            Log.d("DS_DETAIL", "keys=${keys.size}, records=${records.size}, days=${dayList.size}")
+            DetailedUsageData(
+                isAvailable = true,
+                balance = summary.balance,
+                totalCost = summary.totalCost,
+                hasTotalCost = summary.hasTotalCost,
+                keys = keys,
+                records = records,
+                days = dayList,
+                updatedAt = System.currentTimeMillis()
+            )
+        } catch (e: Exception) {
+            Log.e("DS_API", "fetchDetailedUsage failed", e)
+            DetailedUsageData(error = e.message ?: "未知错误")
+        }
+    }
+
+    /** Extract {id, name} from the `api_key` metadata object of a series entry. */
+    private fun parseKey(el: JsonElement?): KeyInfo {
+        return try {
+            val obj = el?.takeIf { it.isJsonObject }?.asJsonObject
+            fun str(field: String): String? =
+                obj?.get(field)?.takeIf { it.isJsonPrimitive }?.asString?.takeIf { it.isNotBlank() }
+            val name = str("name")
+            val trackingId = str("tracking_id")
+            val sensitiveId = str("sensitive_id")
+            val id = trackingId ?: sensitiveId ?: name ?: "unknown"
+            KeyInfo(id = id, name = name ?: id)
+        } catch (_: Exception) {
+            KeyInfo(id = "unknown", name = "Unknown")
+        }
+    }
+
+    /** Local midnight (usage timezone) of the day that contains the given epoch seconds. */
+    private fun localDayStart(epochSec: Long): Long {
+        val c = Calendar.getInstance(usageTimeZone)
+        c.timeInMillis = epochSec * 1000
+        c.set(Calendar.HOUR_OF_DAY, 0)
+        c.set(Calendar.MINUTE, 0)
+        c.set(Calendar.SECOND, 0)
+        c.set(Calendar.MILLISECOND, 0)
+        return c.timeInMillis / 1000
     }
 
     // ─── 时间计算（基于用量时区）────────────────────────────────

@@ -16,4 +16,14 @@
     <color name="cache_text_dark">#81C784</color>
     <color name="widget_bg_dark">#1E1E2E</color>
     <color name="widget_border_dark">#333355</color>
+
+    <!-- Detailed Usage widget — dark-only semantic palette (DeepSeek Platform dark UI) -->
+    <color name="widget_dark_background">#151515</color>
+    <color name="widget_dark_surface">#242424</color>
+    <color name="widget_dark_stroke">#2A2A2A</color>
+    <color name="widget_dark_divider">#2E2E2E</color>
+    <color name="widget_dark_text_primary">#F3F3F3</color>
+    <color name="widget_dark_text_secondary">#AAAAAA</color>
+    <color name="widget_dark_text_tertiary">#707070</color>
+    <color name="widget_dark_accent">#4D6BFE</color>
 </resources>

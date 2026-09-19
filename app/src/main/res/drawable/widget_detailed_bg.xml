@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dark-only background for the Detailed Usage widget (DeepSeek Platform dark UI feel). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+
+    <solid android:color="@color/widget_dark_background" />
+
+    <stroke
+        android:width="0.5dp"
+        android:color="@color/widget_dark_stroke" />
+
+    <corners android:radius="16dp" />
+
+    <padding
+        android:left="2dp"
+        android:top="2dp"
+        android:right="2dp"
+        android:bottom="2dp" />
+</shape>

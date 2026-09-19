@@ -24,6 +24,18 @@
                 android:resource="@xml/widget_info" />
         </receiver>
 
+        <!-- Detailed Usage Widget Provider -->
+        <receiver
+            android:name=".DetailedUsageWidget"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_info_detailed" />
+        </receiver>
+
         <!-- Widget Configuration Activity -->
         <activity
             android:name=".DeepSeekWidgetConfig"

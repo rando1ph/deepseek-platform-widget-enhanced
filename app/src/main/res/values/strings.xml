@@ -2,6 +2,7 @@
 <resources>
     <string name="app_name">DeepSeek Dashboard</string>
     <string name="widget_description">显示 DeepSeek API 余额、用量和缓存命中率</string>
+    <string name="widget_detailed_description">详细用量：余额、累计消费、费用/请求/Token 与费用趋势（深色）</string>
     <string name="config_title">配置 DeepSeek API Key</string>
     <string name="btn_save">保存</string>
     <string name="btn_cancel">取消</string>
