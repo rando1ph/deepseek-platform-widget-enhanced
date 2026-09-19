@@ -12,10 +12,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.DeepSeekWidget">
 
-        <!-- Widget Provider -->
+        <!-- Widget Provider — Compact -->
         <receiver
             android:name=".DeepSeekWidget"
-            android:exported="true">
+            android:exported="true"
+            android:label="@string/widget_label_compact">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -27,7 +28,8 @@
         <!-- Detailed Usage Widget Provider -->
         <receiver
             android:name=".DetailedUsageWidget"
-            android:exported="true">
+            android:exported="true"
+            android:label="@string/widget_label_detailed">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -39,7 +41,8 @@
         <!-- Full Dashboard Widget Provider -->
         <receiver
             android:name=".FullUsageWidget"
-            android:exported="true">
+            android:exported="true"
+            android:label="@string/widget_label_full">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -58,8 +61,6 @@
                 <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
             </intent-filter>
         </activity>
-
-
 
     </application>
 

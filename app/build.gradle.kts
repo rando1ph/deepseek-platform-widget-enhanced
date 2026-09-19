@@ -1,18 +1,40 @@
+import java.io.File
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
 }
 
-// 签名配置 — 直接从 keystore.properties 读取
-val signingProps = mutableMapOf<String, String>()
-file("keystore.properties").takeIf { it.exists() }?.let { f ->
-    f.readLines().forEach { line ->
-        val p = line.split("=", limit = 2)
-        if (p.size == 2) signingProps[p[0]] = p[1]
-    }
+// ─── Release signing ─────────────────────────────────────────────────────────
+// All signing material comes from keystore.properties (project root, or app/ as a fallback).
+// Nothing is hardcoded and there is deliberately NO fallback password: without the file a
+// release build fails with a clear message instead of silently reusing the debug key.
+val keystorePropertiesFile = listOf(
+    rootProject.file("keystore.properties"),
+    file("keystore.properties")
+).firstOrNull { it.exists() }
+
+val keystoreProperties = Properties().apply {
+    keystorePropertiesFile?.inputStream()?.use { load(it) }
 }
 
+fun signingValue(key: String): String? =
+    keystoreProperties.getProperty(key)?.trim()?.takeIf { it.isNotEmpty() }
+
+val releaseStoreFile: File? = signingValue("storeFile")?.let { path ->
+    File(path).takeIf { it.isAbsolute } ?: rootProject.file(path)
+}
+val releaseStorePassword: String? = signingValue("storePassword")
+val releaseKeyAlias: String? = signingValue("keyAlias")
+val releaseKeyPassword: String? = signingValue("keyPassword")
+
+val hasReleaseSigning = releaseStoreFile?.isFile == true &&
+    releaseStorePassword != null && releaseKeyAlias != null && releaseKeyPassword != null
+
 android {
+    // Kotlin / manifest package — intentionally UNCHANGED so the whole source tree keeps
+    // working. Only the distribution identity (applicationId) below is fork-specific.
     namespace = "com.tiramisu.deepseekwidget"
     compileSdk = 34
 
@@ -23,23 +45,23 @@ android {
             keyAlias = "debug"
             keyPassword = "android"
         }
-        create("release") {
-            storeFile = signingProps["storeFile"]?.let { file(it) }
-            storePassword = signingProps["storePassword"] ?: "android"
-            keyAlias = signingProps["keyAlias"] ?: "release"
-            keyPassword = signingProps["keyPassword"] ?: "android"
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = releaseStoreFile
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
         }
     }
 
-
-
-
     defaultConfig {
-        applicationId = "com.tiramisu.deepseekwidget"
+        // Fork-owned package name: installs side by side with the upstream app.
+        applicationId = "dev.randolf.deepseekwidget"
         minSdk = 26
         targetSdk = 34
-        versionCode = 3
-        versionName = "1.2.0"
+        versionCode = 1
+        versionName = "1.0.0"
     }
 
     buildTypes {
@@ -47,8 +69,10 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
         release {
-            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = false
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
     compileOptions {
@@ -60,11 +84,36 @@ android {
     }
 }
 
+// Fail loudly — but only when a release artifact is actually requested, so
+// ./gradlew assembleDebug still works on a machine that has no signing material.
+gradle.taskGraph.whenReady {
+    val wantsRelease = allTasks.any { task ->
+        val name = task.name
+        (name.startsWith("assemble") || name.startsWith("bundle") ||
+            name.startsWith("package") || name.startsWith("install")) &&
+            name.endsWith("Release")
+    }
+    if (wantsRelease && !hasReleaseSigning) {
+        throw GradleException(
+            """
+            |Release signing is not configured — refusing to build a release artifact.
+            |
+            |Create keystore.properties at the project root with:
+            |    storeFile=/absolute/path/to/release.jks
+            |    storePassword=<your store password>
+            |    keyAlias=<your key alias>
+            |    keyPassword=<your key password>
+            |
+            |Then run: ./gradlew assembleRelease
+            |Debug builds are unaffected: ./gradlew assembleDebug
+            """.trimMargin()
+        )
+    }
+}
+
 dependencies {
     // Core
     implementation("androidx.core:core-ktx:1.12.0")
-
-
 
     // AppWidget
     implementation("androidx.glance:glance-appwidget:1.0.0")
@@ -78,13 +127,12 @@ dependencies {
     // JSON parsing
     implementation("com.google.code.gson:gson:2.10.1")
 
-    // Encrypted storage for API key
+    // Encrypted storage for the account token
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
     // Fix: security-crypto 的 Tink 依赖需要 error_prone_annotations
     implementation("com.google.errorprone:error_prone_annotations:2.26.1")
 
-    // JVM unit tests for the pure aggregation / formatting logic
+    // JVM unit tests for the pure aggregation / estimation / layout-safety logic
     testImplementation("junit:junit:4.13.2")
-
 }

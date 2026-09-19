@@ -1,0 +1,40 @@
+DeepSeek Platform Widget Enhanced
+=================================
+
+This product is an enhanced fork of "deepseek-platform-widget":
+
+    Original project:  https://github.com/MCwasd/deepseek-platform-widget
+    Original copyright: Copyright (c) 2026 Tiramisu-wzh
+    Original license:   MIT License
+
+The original MIT License text and copyright notice are retained verbatim in the LICENSE file
+of this repository. Nothing in this NOTICE replaces, narrows, or overrides them.
+
+This derivative work is distributed under the same MIT License.
+
+
+Changes made by this fork
+-------------------------
+
+* Added a third widget ("Full Dashboard") with the same information set at a larger type scale,
+  intended to fill a home-screen page.
+* Added a "Detailed Usage" widget: API-Key and time-range filtering, official cost / requests /
+  tokens, and a CACHE / BILLING block.
+* Added per-API-key usage aggregation (the upstream pipeline folded usage down to per-model
+  totals, discarding the API-key dimension).
+* Added `≈` estimated billing composition (cache-hit / cache-miss / output) and
+  `≈` estimated cache savings, computed locally from DeepSeek's published price list.
+* Split out the account-level lifetime cost (`TOTAL COST`), hidden by default behind an eye
+  toggle.
+* Removed the cost-trend chart from the widget UI and increased type sizes for readability.
+* Added a JVM test suite, including a RemoteViews layout guard that validates every widget
+  layout against the platform's `@RemoteView` requirement.
+* Changed the distribution identity to `dev.randolf.deepseekwidget` so this fork can be
+  installed alongside the original app. The Kotlin/manifest package name is unchanged.
+
+
+No warranty
+-----------
+
+As with the original work, this software is provided "as is", without warranty of any kind.
+It is an unofficial client and is not affiliated with, endorsed by, or supported by DeepSeek.

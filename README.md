@@ -1,177 +1,208 @@
-# DeepSeek Platform Widget 📊
+# DeepSeek Platform Widget Enhanced
 
-[English](#english) | [中文](#中文)
+Home-screen widgets for the **DeepSeek open platform** — balance, spend, and cache/billing
+analytics at a glance, filterable by **API key** and **time range**.
 
-> Real-time DeepSeek API balance, usage, and cache hit rate — on your Android home screen
-
-<img width="770" alt="screenshot" src="https://github.com/user-attachments/assets/5c60f054-412c-47bd-9581-7750d9c192fa" />
-
-## English
-
-### Features
-
-- ✅ **Account login** — email + password → Bearer Token, no manual API key
-- ✅ **Balance · Today Cost · Month Cost** — three-panel summary at a glance
-- ✅ **Per-model breakdown** — Flash / Flash Vision Exp / Pro toggle with Token, cache rate, cost, requests
-- ✅ **Cache hit rate** with color coding — 🟢 ≥90% · 🟡 ≥80% · 🔴 <80%
-- ✅ **Timezone-aware stats** — configurable usage timezone (device / Beijing / UTC)
-- ✅ **Cached display** — no flicker when switching apps or refreshing
-- ✅ **Auto re-login** — 401 triggers silent token refresh
-- ✅ **Auto-refresh every 30 min** — or tap to refresh instantly
-- ✅ **Encrypted storage** — credentials in AES-256-GCM EncryptedSharedPreferences
-- ✅ **GitHub Actions** — CI builds APK on every push
-
-## Widget Areas & Interaction
-
-| Area | Location | Action |
-|------|----------|--------|
-| **Summary** (Balance · Today · Month) | Upper half | **Tap → Refresh** |
-| **Model Detail** (Token · Cache · Cost · Requests) | Lower half | **Tap → Toggle Flash / Flash Vision Exp / Pro** |
-
-> The two areas are separated by a horizontal divider. Tap the top to pull fresh data from DeepSeek; tap the bottom to cycle through Flash → Flash Vision Exp → Pro model stats.
-
-## Quick Start
-
-1. **Download APK** from [GitHub Actions](https://github.com/MCwasd/deepseek-platform-widget/actions) → latest run → Artifacts
-2. **Install** on Android 8.0+
-3. **Long press** home → Add widget → **DeepSeek Dashboard**
-4. **Login** with your DeepSeek platform email + password
-5. Tap the widget and it's ready to go
-
-## Data Sources
-
-DeepSeek Platform API endpoints, all authenticated via account login Bearer Token:
-
-| API | Returns |
-|-----|---------|
-| `POST /auth-api/v0/users/login` | Login → Bearer Token (email + password) |
-| `GET /api/v0/users/get_user_summary` | Balance + available token estimation |
-| `GET /api/v0/usage/by_api_key/amount?start=&end=&tz=` | Per-model token breakdown (epoch range + timezone) |
-| `GET /api/v0/usage/by_api_key/cost?start=&end=&tz=` | Per-model cost breakdown (epoch range + timezone) |
-
-Cache hit rate = `cache_hit / (cache_hit + cache_miss) × 100%`
-
-> 📌 **2026-08 platform update**: usage endpoints migrated to `by_api_key` with `start/end/tz` params; `summary.monthly_costs` is deprecated — monthly cost/tokens are now computed from the new endpoints. API Keys are no longer accepted as Bearer on platform web APIs (use account login token). Pricing moved to peak/valley (Beijing 9:00-12:00, 14:00-18:00 peak; off-peak at half price) effective 2026-08-17.
-
-## Tech Stack
-
-- **Language:** Kotlin · **Min SDK:** 26 · **Target SDK:** 34
-- **Widget:** AppWidgetProvider + WorkManager
-- **HTTP:** OkHttp 4.12 · **JSON:** Gson
-- **Auth:** Login → Bearer Token, auto-refresh on 401
-- **Encryption:** AndroidX EncryptedSharedPreferences (AES-256-GCM)
-- **Build:** Gradle 8.2 + AGP 8.2.0 · **CI:** GitHub Actions
-
-## Build from Source
-
-```bash
-git clone https://github.com/MCwasd/deepseek-platform-widget.git
-cd deepseek-platform-widget
-./gradlew assembleDebug
-# APK: app/build/outputs/apk/debug/
-```
-
-Debug keystore included (`debug.keystore`, alias `debug`, password `android`).
-
-For release builds, add `keystore.properties` at project root:
-
-```properties
-storeFile=/path/to/release.keystore
-storePassword=***
-keyAlias=release
-keyPassword=***
-```
-
-## Project Structure
-
-```
-├── app/
-│   └── src/main/
-│       ├── java/com/tiramisu/deepseekwidget/
-│       │   ├── DeepSeekWidget.kt          # AppWidgetProvider + render
-│       │   ├── DeepSeekApiClient.kt       # All Platform API calls (by_api_key endpoints)
-│       │   ├── DeepSeekPricing.kt         # Official pricing parser (reserved, not enabled)
-│       │   ├── DeepSeekData.kt            # WidgetDisplayData + ModelData
-│       │   ├── DeepSeekAccountManager.kt  # Login + token lifecycle
-│       │   ├── DeepSeekWidgetConfig.kt    # Config activity (email+password + timezone)
-│       │   └── WidgetUpdateWorker.kt      # WorkManager periodic update
-│       └── res/
-│           ├── layout/widget_layout.xml   # RemoteViews layout
-│           ├── layout/config_layout.xml   # Login config UI
-│           └── xml/widget_info.xml        # Widget metadata
-├── build.gradle.kts
-├── settings.gradle.kts
-└── .github/workflows/build-apk.yml        # CI (GitHub Actions)
-```
-
-## Privacy
-
-- Credentials stored **locally** (EncryptedSharedPreferences, AES-256-GCM)
-- All API calls go **directly** to `platform.deepseek.com`
-- **No** analytics, telemetry, or third-party servers
-
-## License
-
-MIT — see [LICENSE](LICENSE)
+> **Unofficial / not affiliated with DeepSeek.** This is a community-built client that talks to
+> the DeepSeek open platform using *your own* account. "DeepSeek" appears only to describe what
+> the app connects to. Use at your own discretion.
 
 ---
 
-## 中文
+## Attribution
 
-### 功能介绍
+This project is an **enhanced fork** of **MCwasd/deepseek-platform-widget**.
 
-- ✅ **账号登录** — 邮箱 + 密码获取 Bearer Token，无需手动填写 API Key
-- ✅ **三栏总览** — 余额 / 今日花费 / 本月累计
-- ✅ **模型详析** — Flash / Flash Vision Exp / Pro 三态切换，显示 Token 量、缓存命中率、花费、请求数
-- ✅ **缓存命中率颜色** — ≥90% 绿 · ≥80% 黄 · <80% 红
-- ✅ **时区设置** — 配置页可选设备/北京/UTC，影响今日/本月统计边界
-- ✅ **缓存显示** — 切应用不闪，刷新失败保留上次数据
-- ✅ **自动重登** — 401 过期自动用缓存密码重新登录
-- ✅ **每 30 分钟自动刷新** — 也可点击手动刷新
-- ✅ **AES-256-GCM 加密存储** — 账号密码仅存手机本地
-- ✅ **CI 自动构建** — 推送即自动编译 APK
+- Original project: <https://github.com/MCwasd/deepseek-platform-widget>
 
-## 交互区域说明
+Original project and this derivative are distributed under the **MIT License**. The original
+copyright notice is preserved unchanged in [`LICENSE`](LICENSE); a description of what this fork
+changes lives in [`NOTICE`](NOTICE).
 
-| 区域 | 位置 | 操作 |
-|------|------|------|
-| **上半区** — 余额 / 今日 / 本月 | 分割线以上 | **点击 → 刷新数据** |
-| **下半区** — Token / 缓存率 / 开销 / 请求 | 分割线以下 | **点击 → Flash / Flash Vision Exp / Pro 循环切换** |
+---
 
-## 快速开始
+## The three widgets
 
-1. 从 [GitHub Actions](https://github.com/MCwasd/deepseek-platform-widget/actions) 下载最新 Artifact APK
-2. 安装到 Android 8.0+ 手机
-3. 长按桌面 → 小组件 → **DeepSeek 仪表盘**
-4. 输入 DeepSeek 平台邮箱 + 密码登录
-5. 点击小组件即可使用
+| Widget | Recommended size | Description |
+|---|---|---|
+| **Compact** | ~4×2 | The upstream three-panel summary: balance · today · this month, with a per-model detail row |
+| **Detailed Usage** | 4×5 | Dense dark dashboard: account block, Time / API-Key filters, official cost·requests·tokens, and a CACHE / BILLING breakdown |
+| **Full Dashboard** | 4×6, resizable to fill a page | The same information as Detailed Usage at a much larger type scale, for reading at arm's length |
 
-## 数据来源
+All three can be placed at the same time. Each widget keeps its **own** Time range, API-Key
+selection and Total-Cost visibility — they never affect each other.
 
-DeepSeek 平台接口，均通过账号登录 Bearer Token 认证：
+---
 
-| 接口 | 获取数据 |
-|------|---------|
-| `auth-api/v0/users/login` | 登录获取 Bearer Token（邮箱+密码） |
-| `api/v0/users/get_user_summary` | 余额、可用 Token 估算 |
-| `api/v0/usage/by_api_key/amount?start=&end=&tz=` | 按模型拆分 Token 明细（时间范围+时区） |
-| `api/v0/usage/by_api_key/cost?start=&end=&tz=` | 按模型拆分费用（时间范围+时区） |
+## What it shows
 
-> 📌 **2026-08 平台更新**：用量接口迁移到 `by_api_key`（`start/end/tz` 参数），`summary.monthly_costs` 已弃用——本月费用/Token 由新接口自行汇总；平台 web 接口不再接受 API Key 作 Bearer（需账号登录 Token）。2026-08-17 起实施峰谷定价（北京时间周一至周五 9:00-12:00、14:00-18:00 高峰，其余为闲时，闲时半价）。2026-08 平台新增多模态模型 `deepseek-v4-flash-vision-exp`（价格与 Flash 一致），小组件下半区支持其切换与统计。
+**Account level** — independent of any filter
 
-## 自行编译
+- **BALANCE** — topped-up balance
+- **TOTAL COST** — lifetime spend. **Hidden by default**; tap the eye icon to reveal or hide it.
+
+**Filtered by Time + API Key**
+
+- **COST** · **REQUESTS** · **TOKENS** — official API values
+- **TIME** — tap to cycle `Today → Last 7 days → Last 30 days`
+  (`Today` is the current local calendar day, because the API buckets usage per day.)
+- **API KEY** — tap to cycle `All Keys → each key on your account`. Key names come from the API;
+  none are hardcoded. If the selected key disappears, the widget falls back to All Keys.
+
+**CACHE / BILLING**
+
+- **CACHE HIT** · **CACHE MISS** · **OUTPUT** token counts — official
+- cache hit / miss share of input tokens
+- `≈` estimated cost per component
+- `≈` **EST. CACHE SAVINGS**
+
+---
+
+## About the `≈` values — please read
+
+DeepSeek's usage API returns token counts already split into cache-hit, cache-miss and output.
+The **cost** API, however, returns only a single official total per *(API key × model × day)* —
+it does **not** break that total down by component.
+
+Therefore:
+
+- Anything labelled `BALANCE`, `TOTAL COST` or `COST` is an **official API value**.
+- Anything prefixed with **`≈`** is a **local estimate** derived from DeepSeek's published price
+  list. It is *not* an official bill breakdown, and the components will not necessarily add up
+  to the official total.
+
+**EST. CACHE SAVINGS** answers a counterfactual question: *if the cache-hit tokens had instead
+been charged at the cache-miss rate, how much more would they have cost?* It is an intuition
+aid, not a refund figure.
+
+Estimates are computed **per model**, reusing the app's peak/off-peak price table, and days
+before peak/valley pricing took effect use the legacy flat price. Because usage buckets are
+daily, the peak/off-peak mix *within* a day cannot be known exactly, so a day is charged as a
+duration-weighted blend — expect a modest deviation from the official total. Models that are not
+in the price table are still counted in the token totals, but are skipped by the estimate.
+
+---
+
+## Dark-only by design
+
+The **Detailed Usage** and **Full Dashboard** widgets are dark-only: they stay dark regardless
+of the system theme. There is no light mode, no "follow system" and no dynamic colour.
+
+---
+
+## Login
+
+The widgets read your usage through a normal **DeepSeek open-platform account login** (email +
+password) — not an API key, which the platform does not accept for these endpoints.
+
+- Credentials and the session token are stored locally in `EncryptedSharedPreferences`
+  (AES-256-GCM).
+- All requests go directly to `platform.deepseek.com`. There is no intermediate server, no
+  analytics and no telemetry.
+
+---
+
+## Install
+
+1. Download the APK from the **Releases** page of this repository.
+2. Install it (requires Android 8.0 / API 26 or newer).
+3. Long-press the home screen → **Widgets** → choose **Compact**, **Detailed Usage** or
+   **Full Dashboard**.
+4. Enter your DeepSeek platform email and password in the configuration screen. The widget then
+   loads your data and refreshes automatically every 30 minutes.
+
+---
+
+## Build from source
+
+Requires **JDK 17** and the **Android SDK** (platform 34, build-tools 34.0.0).
 
 ```bash
-git clone https://github.com/MCwasd/deepseek-platform-widget.git
-cd deepseek-platform-widget
+git clone https://github.com/rando1ph/deepseek-platform-widget-enhanced.git
+cd deepseek-platform-widget-enhanced
 ./gradlew assembleDebug
-# APK: app/build/outputs/apk/debug/
+# → app/build/outputs/apk/debug/app-debug.apk
 ```
 
-## 隐私说明
+Point the build at your SDK through `ANDROID_HOME`, or create `local.properties`:
 
-密码加密存手机，请求直连 DeepSeek 服务器，无任何第三方中转。
+```properties
+sdk.dir=/absolute/path/to/Android/sdk
+```
 
-## 许可证
+`local.properties` is git-ignored.
 
-MIT
+### Release builds
+
+Release signing material is **never committed**, and there is **no fallback**: the build will
+not silently sign a release with the debug key. Create `keystore.properties` at the project
+root:
+
+```properties
+storeFile=/absolute/path/to/release.jks
+storePassword=****
+keyAlias=****
+keyPassword=****
+```
+
+Then:
+
+```bash
+./gradlew assembleRelease
+```
+
+If `keystore.properties` is missing (or the keystore file cannot be found), `assembleRelease`
+fails with an explanatory message. `assembleDebug` is unaffected.
+
+`keystore.properties`, `*.jks` and `*.keystore` are all git-ignored — see [`.gitignore`](.gitignore).
+
+---
+
+## Package identity
+
+This fork ships as **`dev.randolf.deepseekwidget`**, so it installs **alongside** the original
+`com.tiramisu.deepseekwidget` app without conflict.
+
+The Kotlin/manifest package is deliberately left as `com.tiramisu.deepseekwidget` so the fork
+stays close to upstream and easy to rebase.
+
+---
+
+## Tests
+
+```bash
+./gradlew testDebugUnitTest
+```
+
+The JVM suite covers the pure logic: joint Time × API-Key filtering, per-key and per-model
+aggregation, cache-hit rate, the `≈` estimation and cache-savings maths, serialization round
+trips, and the `bucket` field's tolerance of both string and numeric values.
+
+It also contains a **RemoteViews layout guard**. `RemoteViews` can only inflate classes
+annotated `@RemoteView`, so a single stray `<View>` in a widget layout makes the launcher fail
+with *"An error occurred when loading widget"* while the APK still builds and every other test
+stays green. The guard reads the `@RemoteView` rule directly from the platform classes and
+checks every `widget*` layout in the module.
+
+---
+
+## Data sources
+
+| Endpoint | Used for |
+|---|---|
+| `POST /auth-api/v0/users/login` | account login → bearer token |
+| `GET /api/v0/users/get_user_summary` | balance + lifetime cost |
+| `GET /api/v0/usage/by_api_key/amount` | per-key / per-model / per-day token counts |
+| `GET /api/v0/usage/by_api_key/cost` | per-key / per-model / per-day official cost |
+
+Response field names and pitfalls are documented in
+[`deepseek-api-reference.md`](deepseek-api-reference.md).
+
+---
+
+## License
+
+**MIT** — see [`LICENSE`](LICENSE).
+
+- Original work © Tiramisu-wzh (and contributors to the upstream project).
+- This fork's changes are described in [`NOTICE`](NOTICE).

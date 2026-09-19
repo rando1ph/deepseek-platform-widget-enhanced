@@ -1,11 +1,25 @@
-*.iml
+# ─── Build output ────────────────────────────────────────────────────────────
 .gradle
-/local.properties
-/.idea
-.DS_Store
+build/
 /build
 app/build
 /captures
 .externalNativeBuild
 .cxx
+
+# ─── IDE / OS ────────────────────────────────────────────────────────────────
+*.iml
+/.idea
+.DS_Store
+
+# ─── Local machine config (absolute SDK path) ───────────────────────────────
+local.properties
+
+# ─── Signing material — never commit ────────────────────────────────────────
+keystore.properties
+secrets.properties
+*.jks
+*.keystore
+keystore
+
 *.bak
