@@ -7,13 +7,8 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
-import android.graphics.PorterDuff
-import android.graphics.RectF
 import android.net.Uri
+import android.view.View
 import android.widget.RemoteViews
 import androidx.work.Constraints
 import androidx.work.NetworkType
@@ -104,7 +99,10 @@ class DetailedUsageWidget : AppWidgetProvider() {
             R.id.tv_d_updated,
             if (data.updatedAt > 0) SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(data.updatedAt)) else "--:--"
         )
-        view.setTextViewText(R.id.tv_d_status, if (data.error != null) "⚠ ${data.error}" else status)
+        val statusText = if (data.error != null) "⚠ ${data.error}" else status
+        view.setTextViewText(R.id.tv_d_status, statusText)
+        // Collapse the row entirely when there is nothing to say, freeing vertical space.
+        view.setViewVisibility(R.id.tv_d_status, if (statusText.isEmpty()) View.GONE else View.VISIBLE)
 
         // Account-level block (filter-independent)
         view.setTextViewText(R.id.tv_d_balance, if (ok) DetailedUsageData.formatMoney(data.balance) else "--")
@@ -133,19 +131,6 @@ class DetailedUsageWidget : AppWidgetProvider() {
         view.setTextViewText(R.id.tv_d_requests, if (ok) DetailedUsageData.formatRequests(stats.requests) else "--")
         view.setTextViewText(R.id.tv_d_tokens, if (ok) DetailedUsageData.formatTokens(stats.tokens) else "--")
 
-        // Cost trend: summary + bars with date labels
-        val summary = if (ok) {
-            "${range.shortLabel} · ${DetailedUsageData.formatMoney(stats.cost)} · ${DetailedUsageData.formatTokens(stats.tokens)} tokens"
-        } else "--"
-        view.setTextViewText(R.id.tv_d_trend_summary, summary)
-        view.setImageViewBitmap(
-            R.id.iv_d_trend,
-            buildTrendBitmap(
-                if (ok) stats.trend else emptyList(),
-                if (ok) stats.trendDays else emptyList()
-            )
-        )
-
         // CACHE / BILLING — official token split; ≈ estimated cost composition
         view.setTextViewText(R.id.tv_d_hit_tok, tokenText(ok, stats.hitTokens))
         view.setTextViewText(R.id.tv_d_hit_rate, rateText(ok, stats.hitRatePercent))
@@ -169,6 +154,7 @@ class DetailedUsageWidget : AppWidgetProvider() {
         view.setTextViewText(R.id.tv_d_title, "DeepSeek Usage")
         view.setTextViewText(R.id.tv_d_updated, "--:--")
         view.setTextViewText(R.id.tv_d_status, "⟳ 加载中…")
+        view.setViewVisibility(R.id.tv_d_status, View.VISIBLE)
         view.setTextViewText(R.id.tv_d_balance, "¥--")
         view.setTextViewText(R.id.tv_d_total, "¥••••••")
         view.setImageViewResource(R.id.iv_d_eye, R.drawable.ic_visibility_dark)
@@ -177,8 +163,6 @@ class DetailedUsageWidget : AppWidgetProvider() {
         view.setTextViewText(R.id.tv_d_cost, "¥--")
         view.setTextViewText(R.id.tv_d_requests, "--")
         view.setTextViewText(R.id.tv_d_tokens, "--")
-        view.setTextViewText(R.id.tv_d_trend_summary, "--")
-        view.setImageViewBitmap(R.id.iv_d_trend, buildTrendBitmap(emptyList(), emptyList()))
         view.setTextViewText(R.id.tv_d_hit_tok, "--")
         view.setTextViewText(R.id.tv_d_hit_rate, "--")
         view.setTextViewText(R.id.tv_d_hit_cost, "--")
@@ -203,68 +187,6 @@ class DetailedUsageWidget : AppWidgetProvider() {
 
     private fun estimateText(ok: Boolean, value: Double?): String =
         if (ok) DetailedUsageData.formatEstimate(value) else "--"
-
-    // ─── Trend bitmap (bars + date labels) ─────────────────────
-
-    private fun buildTrendBitmap(values: List<Double>, days: List<Long>): Bitmap {
-        val width = 600
-        val height = 240
-        val labelHeight = 46f
-        val barsBottom = height - labelHeight
-        val bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bmp)
-        canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
-        if (values.isEmpty()) return bmp
-
-        val max = values.maxOrNull() ?: 0.0
-        val n = values.size
-        val slot = width.toFloat() / n
-        val gap = (slot * 0.30f).coerceAtLeast(1.5f)
-        val barW = (slot - gap).coerceAtLeast(1f)
-        val radius = (barW * 0.35f).coerceAtMost(6f)
-
-        val barPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-        val accent = 0xFF4D6BFE.toInt()
-        val dim = 0xFF33406E.toInt()
-        for (i in 0 until n) {
-            val v = values[i]
-            val ratio = if (max > 0.0) (v / max).toFloat().coerceIn(0f, 1f) else 0f
-            val barH = if (v > 0.0) (ratio * (barsBottom - 10f)).coerceAtLeast(8f) else 4f
-            val left = i * slot + gap / 2f
-            barPaint.color = if (v > 0.0) accent else dim
-            canvas.drawRoundRect(RectF(left, barsBottom - barH, left + barW, barsBottom), radius, radius, barPaint)
-        }
-
-        // Date labels: every bar for ≤7 days, sparse (start/middle…/end) beyond that.
-        val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = 0xFFAAAAAA.toInt()
-            textSize = 22f
-        }
-        val labelIndices: List<Int> = when {
-            n <= 1 -> listOf(0)
-            n <= 7 -> (0 until n).toList()
-            else -> {
-                val step = ((n - 1) / 4).coerceAtLeast(1)
-                val idx = ArrayList<Int>()
-                var i = 0
-                while (i < n) {
-                    idx.add(i)
-                    i += step
-                }
-                if (idx.last() != n - 1) idx.add(n - 1)
-                idx
-            }
-        }
-        val sdf = SimpleDateFormat("M/d", Locale.US)
-        for (i in labelIndices) {
-            if (i < 0 || i >= n || i >= days.size) continue
-            val text = if (n <= 1) "Today" else sdf.format(Date(days[i] * 1000L))
-            val textWidth = textPaint.measureText(text)
-            val x = (i * slot + (slot - textWidth) / 2f).coerceIn(0f, width - textWidth)
-            canvas.drawText(text, x, height - 14f, textPaint)
-        }
-        return bmp
-    }
 
     // ─── Update entry points ───────────────────────────────────
 

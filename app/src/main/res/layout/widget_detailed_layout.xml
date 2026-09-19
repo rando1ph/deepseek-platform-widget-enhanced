@@ -1,15 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Detailed Usage widget — dark-only, high-density layout.
-  Mirrors the DeepSeek Platform Usage page (account → filters → metrics → trend) plus a
-  CACHE / BILLING block. Every colour is a semantic resource (see colors.xml); no hex here.
+  Detailed Usage widget — dark-only, high-density, readable layout.
+  No charts: the cost trend is intentionally absent (open the Platform Usage page for charts).
+  Vertical budget is tuned for 4×5; 4×4 may clip the bottom block by design.
+
+  includeFontPadding=false everywhere so a larger textSize costs less vertical space.
+  Every colour is a semantic resource (colors.xml) — no hex literals here.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/detailed_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="12dp"
+    android:padding="10dp"
     android:background="@drawable/widget_detailed_bg">
 
     <!-- Header: title (→ open portal) · updated time · refresh -->
@@ -25,9 +28,10 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="DeepSeek Usage"
-            android:textSize="14sp"
+            android:textSize="18sp"
             android:textStyle="bold"
             android:textColor="@color/widget_dark_text_primary"
+            android:includeFontPadding="false"
             android:singleLine="true"
             android:ellipsize="end" />
 
@@ -36,34 +40,43 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="--:--"
-            android:textSize="11sp"
+            android:textSize="12sp"
             android:textColor="@color/widget_dark_text_tertiary"
-            android:layout_marginEnd="8dp" />
+            android:includeFontPadding="false"
+            android:layout_marginEnd="10dp" />
 
         <ImageView
             android:id="@+id/iv_d_refresh"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
             android:src="@drawable/ic_refresh_dark"
             android:contentDescription="refresh" />
     </LinearLayout>
 
+    <!-- Hidden (GONE) unless there is a status/error to show -->
     <TextView
         android:id="@+id/tv_d_status"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text=""
-        android:textSize="10sp"
+        android:textSize="11sp"
         android:textColor="@color/widget_dark_text_tertiary"
+        android:includeFontPadding="false"
         android:singleLine="true"
         android:ellipsize="end" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/widget_dark_divider"
+        android:layout_marginTop="7dp"
+        android:layout_marginBottom="7dp" />
 
     <!-- Account block: Topped-up balance · Total cost (eyes toggle) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="6dp">
+        android:orientation="horizontal">
 
         <LinearLayout
             android:layout_width="0dp"
@@ -75,17 +88,20 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="BALANCE"
-                android:textSize="10sp"
-                android:textColor="@color/widget_dark_text_secondary" />
+                android:textSize="12sp"
+                android:textColor="@color/widget_dark_text_secondary"
+                android:includeFontPadding="false" />
 
             <TextView
                 android:id="@+id/tv_d_balance"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="¥--"
-                android:textSize="19sp"
+                android:textSize="24sp"
                 android:textStyle="bold"
-                android:textColor="@color/widget_dark_accent" />
+                android:textColor="@color/widget_dark_accent"
+                android:includeFontPadding="false"
+                android:singleLine="true" />
         </LinearLayout>
 
         <LinearLayout
@@ -104,13 +120,14 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="TOTAL COST"
-                    android:textSize="10sp"
-                    android:textColor="@color/widget_dark_text_secondary" />
+                    android:textSize="12sp"
+                    android:textColor="@color/widget_dark_text_secondary"
+                    android:includeFontPadding="false" />
 
                 <ImageView
                     android:id="@+id/iv_d_eye"
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
                     android:layout_marginStart="6dp"
                     android:src="@drawable/ic_visibility_dark"
                     android:contentDescription="toggle total cost" />
@@ -121,24 +138,20 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="¥••••••"
-                android:textSize="19sp"
+                android:textSize="24sp"
                 android:textStyle="bold"
-                android:textColor="@color/widget_dark_text_primary" />
+                android:textColor="@color/widget_dark_text_primary"
+                android:includeFontPadding="false"
+                android:singleLine="true" />
         </LinearLayout>
     </LinearLayout>
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="@color/widget_dark_divider"
-        android:layout_marginTop="6dp"
-        android:layout_marginBottom="6dp" />
 
     <!-- Filters: TIME · API KEY (each cycles on tap, state is per-widget) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:layout_marginTop="10dp">
 
         <LinearLayout
             android:id="@+id/row_d_time"
@@ -152,17 +165,19 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="TIME"
-                android:textSize="9sp"
-                android:textColor="@color/widget_dark_text_tertiary" />
+                android:textSize="12sp"
+                android:textColor="@color/widget_dark_text_tertiary"
+                android:includeFontPadding="false" />
 
             <TextView
                 android:id="@+id/tv_d_time"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Last 7 days"
-                android:textSize="12sp"
+                android:textSize="17sp"
                 android:textStyle="bold"
                 android:textColor="@color/widget_dark_text_primary"
+                android:includeFontPadding="false"
                 android:singleLine="true"
                 android:ellipsize="end" />
         </LinearLayout>
@@ -179,17 +194,19 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="API KEY"
-                android:textSize="9sp"
-                android:textColor="@color/widget_dark_text_tertiary" />
+                android:textSize="12sp"
+                android:textColor="@color/widget_dark_text_tertiary"
+                android:includeFontPadding="false" />
 
             <TextView
                 android:id="@+id/tv_d_key"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="All Keys"
-                android:textSize="12sp"
+                android:textSize="17sp"
                 android:textStyle="bold"
                 android:textColor="@color/widget_dark_text_primary"
+                android:includeFontPadding="false"
                 android:singleLine="true"
                 android:ellipsize="end" />
         </LinearLayout>
@@ -200,7 +217,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_marginTop="5dp">
+        android:layout_marginTop="8dp">
 
         <LinearLayout
             android:layout_width="0dp"
@@ -212,17 +229,19 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="COST"
-                android:textSize="9sp"
-                android:textColor="@color/widget_dark_text_tertiary" />
+                android:textSize="12sp"
+                android:textColor="@color/widget_dark_text_tertiary"
+                android:includeFontPadding="false" />
 
             <TextView
                 android:id="@+id/tv_d_cost"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="¥--"
-                android:textSize="15sp"
+                android:textSize="20sp"
                 android:textStyle="bold"
                 android:textColor="@color/widget_dark_accent"
+                android:includeFontPadding="false"
                 android:singleLine="true"
                 android:ellipsize="end" />
         </LinearLayout>
@@ -237,17 +256,19 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="REQUESTS"
-                android:textSize="9sp"
-                android:textColor="@color/widget_dark_text_tertiary" />
+                android:textSize="12sp"
+                android:textColor="@color/widget_dark_text_tertiary"
+                android:includeFontPadding="false" />
 
             <TextView
                 android:id="@+id/tv_d_requests"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="--"
-                android:textSize="15sp"
+                android:textSize="20sp"
                 android:textStyle="bold"
                 android:textColor="@color/widget_dark_text_primary"
+                android:includeFontPadding="false"
                 android:singleLine="true"
                 android:ellipsize="end" />
         </LinearLayout>
@@ -262,243 +283,237 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="TOKENS"
-                android:textSize="9sp"
-                android:textColor="@color/widget_dark_text_tertiary" />
+                android:textSize="12sp"
+                android:textColor="@color/widget_dark_text_tertiary"
+                android:includeFontPadding="false" />
 
             <TextView
                 android:id="@+id/tv_d_tokens"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="--"
-                android:textSize="15sp"
+                android:textSize="20sp"
                 android:textStyle="bold"
                 android:textColor="@color/widget_dark_text_primary"
+                android:includeFontPadding="false"
                 android:singleLine="true"
                 android:ellipsize="end" />
         </LinearLayout>
     </LinearLayout>
 
-    <!-- Cost trend: label + summary, then bars with date labels -->
-    <LinearLayout
+    <TextView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:layout_marginTop="8dp">
+        android:layout_height="1dp"
+        android:background="@color/widget_dark_divider"
+        android:layout_marginTop="9dp"
+        android:layout_marginBottom="6dp" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="COST TREND"
-            android:textSize="9sp"
-            android:textColor="@color/widget_dark_text_tertiary" />
-
-        <TextView
-            android:id="@+id/tv_d_trend_summary"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="--"
-            android:textSize="9sp"
-            android:textColor="@color/widget_dark_text_secondary"
-            android:gravity="end"
-            android:singleLine="true"
-            android:ellipsize="end"
-            android:layout_marginStart="6dp" />
-    </LinearLayout>
-
-    <ImageView
-        android:id="@+id/iv_d_trend"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:minHeight="44dp"
-        android:scaleType="fitXY"
-        android:contentDescription="cost trend" />
-
-    <!-- CACHE / BILLING — official token split, ≈ estimated cost composition -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="CACHE / BILLING"
-        android:textSize="9sp"
+        android:textSize="12sp"
         android:textColor="@color/widget_dark_text_tertiary"
-        android:layout_marginTop="8dp" />
+        android:includeFontPadding="false" />
 
     <!-- CACHE HIT -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="3dp">
+        android:orientation="vertical"
+        android:layout_marginTop="5dp">
 
         <TextView
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1.30"
             android:text="CACHE HIT"
-            android:textSize="9sp"
-            android:textColor="@color/widget_dark_text_secondary" />
-
-        <TextView
-            android:id="@+id/tv_d_hit_tok"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1.00"
-            android:text="--"
-            android:textSize="10sp"
-            android:textStyle="bold"
-            android:textColor="@color/widget_dark_text_primary"
-            android:gravity="end"
-            android:singleLine="true" />
-
-        <TextView
-            android:id="@+id/tv_d_hit_rate"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="0.85"
-            android:text="--"
-            android:textSize="10sp"
+            android:textSize="13sp"
             android:textColor="@color/widget_dark_text_secondary"
-            android:gravity="end"
-            android:singleLine="true" />
+            android:includeFontPadding="false" />
 
-        <TextView
-            android:id="@+id/tv_d_hit_cost"
-            android:layout_width="0dp"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1.25"
-            android:text="--"
-            android:textSize="10sp"
-            android:textColor="@color/widget_dark_text_secondary"
-            android:gravity="end"
-            android:singleLine="true" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/tv_d_hit_tok"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="--"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/widget_dark_text_primary"
+                android:includeFontPadding="false"
+                android:gravity="start"
+                android:singleLine="true" />
+
+            <TextView
+                android:id="@+id/tv_d_hit_rate"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="--"
+                android:textSize="15sp"
+                android:textColor="@color/widget_dark_text_secondary"
+                android:includeFontPadding="false"
+                android:gravity="center"
+                android:singleLine="true" />
+
+            <TextView
+                android:id="@+id/tv_d_hit_cost"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1.3"
+                android:text="--"
+                android:textSize="16sp"
+                android:textColor="@color/widget_dark_text_secondary"
+                android:includeFontPadding="false"
+                android:gravity="end"
+                android:singleLine="true" />
+        </LinearLayout>
     </LinearLayout>
 
     <!-- CACHE MISS -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="2dp">
+        android:orientation="vertical"
+        android:layout_marginTop="6dp">
 
         <TextView
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1.30"
             android:text="CACHE MISS"
-            android:textSize="9sp"
-            android:textColor="@color/widget_dark_text_secondary" />
-
-        <TextView
-            android:id="@+id/tv_d_miss_tok"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1.00"
-            android:text="--"
-            android:textSize="10sp"
-            android:textStyle="bold"
-            android:textColor="@color/widget_dark_text_primary"
-            android:gravity="end"
-            android:singleLine="true" />
-
-        <TextView
-            android:id="@+id/tv_d_miss_rate"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="0.85"
-            android:text="--"
-            android:textSize="10sp"
+            android:textSize="13sp"
             android:textColor="@color/widget_dark_text_secondary"
-            android:gravity="end"
-            android:singleLine="true" />
+            android:includeFontPadding="false" />
 
-        <TextView
-            android:id="@+id/tv_d_miss_cost"
-            android:layout_width="0dp"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1.25"
-            android:text="--"
-            android:textSize="10sp"
-            android:textColor="@color/widget_dark_text_secondary"
-            android:gravity="end"
-            android:singleLine="true" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/tv_d_miss_tok"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="--"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/widget_dark_text_primary"
+                android:includeFontPadding="false"
+                android:gravity="start"
+                android:singleLine="true" />
+
+            <TextView
+                android:id="@+id/tv_d_miss_rate"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="--"
+                android:textSize="15sp"
+                android:textColor="@color/widget_dark_text_secondary"
+                android:includeFontPadding="false"
+                android:gravity="center"
+                android:singleLine="true" />
+
+            <TextView
+                android:id="@+id/tv_d_miss_cost"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1.3"
+                android:text="--"
+                android:textSize="16sp"
+                android:textColor="@color/widget_dark_text_secondary"
+                android:includeFontPadding="false"
+                android:gravity="end"
+                android:singleLine="true" />
+        </LinearLayout>
     </LinearLayout>
 
-    <!-- OUTPUT -->
+    <!-- OUTPUT (no percentage: its denominator would differ from the hit/miss input share) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="2dp">
+        android:orientation="vertical"
+        android:layout_marginTop="6dp">
 
         <TextView
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1.30"
             android:text="OUTPUT"
-            android:textSize="9sp"
-            android:textColor="@color/widget_dark_text_secondary" />
-
-        <TextView
-            android:id="@+id/tv_d_out_tok"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1.00"
-            android:text="--"
-            android:textSize="10sp"
-            android:textStyle="bold"
-            android:textColor="@color/widget_dark_text_primary"
-            android:gravity="end"
-            android:singleLine="true" />
-
-        <TextView
-            android:id="@+id/tv_d_out_rate"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="0.85"
-            android:text=""
-            android:textSize="10sp"
+            android:textSize="13sp"
             android:textColor="@color/widget_dark_text_secondary"
-            android:gravity="end"
-            android:singleLine="true" />
+            android:includeFontPadding="false" />
 
-        <TextView
-            android:id="@+id/tv_d_out_cost"
-            android:layout_width="0dp"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1.25"
-            android:text="--"
-            android:textSize="10sp"
-            android:textColor="@color/widget_dark_text_secondary"
-            android:gravity="end"
-            android:singleLine="true" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/tv_d_out_tok"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="--"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/widget_dark_text_primary"
+                android:includeFontPadding="false"
+                android:gravity="start"
+                android:singleLine="true" />
+
+            <!-- Alignment spacer only — no invented OUTPUT percentage -->
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/tv_d_out_cost"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1.3"
+                android:text="--"
+                android:textSize="16sp"
+                android:textColor="@color/widget_dark_text_secondary"
+                android:includeFontPadding="false"
+                android:gravity="end"
+                android:singleLine="true" />
+        </LinearLayout>
     </LinearLayout>
 
-    <!-- CACHE SAVED -->
+    <!-- EST. CACHE SAVINGS (counterfactual estimate: hit tokens priced at the miss rate) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="3dp">
+        android:orientation="vertical"
+        android:layout_marginTop="7dp">
 
         <TextView
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="CACHE SAVED"
-            android:textSize="9sp"
-            android:textColor="@color/widget_dark_text_tertiary" />
+            android:text="EST. CACHE SAVINGS"
+            android:textSize="13sp"
+            android:textColor="@color/widget_dark_text_tertiary"
+            android:includeFontPadding="false" />
 
         <TextView
             android:id="@+id/tv_d_saved"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="--"
-            android:textSize="10sp"
+            android:textSize="18sp"
             android:textStyle="bold"
             android:textColor="@color/widget_dark_text_primary"
-            android:gravity="end"
+            android:includeFontPadding="false"
             android:singleLine="true" />
     </LinearLayout>
 </LinearLayout>
