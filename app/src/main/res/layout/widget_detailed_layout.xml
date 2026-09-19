@@ -470,8 +470,10 @@
                 android:gravity="start"
                 android:singleLine="true" />
 
-            <!-- Alignment spacer only — no invented OUTPUT percentage -->
-            <View
+            <!-- Alignment spacer only — no invented OUTPUT percentage.
+                 NOTE: must be a @RemoteView class (FrameLayout). A plain <View> is NOT
+                 annotated @RemoteView and makes RemoteViewsInflater reject the whole layout. -->
+            <FrameLayout
                 android:layout_width="0dp"
                 android:layout_height="1dp"
                 android:layout_weight="1" />
