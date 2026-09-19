@@ -314,7 +314,7 @@ class DetailedUsageWidget : AppWidgetProvider() {
 
         /** 24h → 7d → 30d (cycle order); 7d is the default. */
         private val RANGES = listOf(
-            TimeRangeOption("Last 24 hours", 1),
+            TimeRangeOption("Today", 1),
             TimeRangeOption("Last 7 days", 7),
             TimeRangeOption("Last 30 days", 30)
         )

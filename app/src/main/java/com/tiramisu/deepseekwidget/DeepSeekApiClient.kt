@@ -557,7 +557,10 @@ data class UsageByKeyAmountData(
 data class UsageByKeyAmountBiz(
     val start: Long? = null,
     val end: Long? = null,
-    val bucket: Long? = null,
+    // Opaque granularity token: the API returns a STRING ("1d"), not a number. Declared as
+    // JsonElement so no representation ("1d"/"1h"/number) can fail deserialization of the
+    // whole response. Never read by app code.
+    val bucket: JsonElement? = null,
     val models: List<String>? = null,
     val series: List<UsageByKeySeries>? = null
 )
@@ -600,7 +603,10 @@ data class UsageByKeyCostData(
 data class UsageByKeyCostBiz(
     val start: Long? = null,
     val end: Long? = null,
-    val bucket: Long? = null,
+    // Opaque granularity token: the API returns a STRING ("1d"), not a number. Declared as
+    // JsonElement so no representation ("1d"/"1h"/number) can fail deserialization of the
+    // whole response. Never read by app code.
+    val bucket: JsonElement? = null,
     val models: List<String>? = null,
     val data: List<UsageCostCurrency>? = null
 )
