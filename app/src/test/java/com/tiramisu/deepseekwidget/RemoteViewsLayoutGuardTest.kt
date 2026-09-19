@@ -20,6 +20,9 @@ import javax.xml.parsers.DocumentBuilderFactory
  * (`@RemoteView` is @Retention(RUNTIME), verified with `javap -v` on android-34/android.jar).
  * A self-check assertion guards the rule engine, so this test cannot silently degrade into a
  * no-op if the platform annotations ever become unreadable.
+ *
+ * All `widget*` layouts under res/layout are discovered automatically, so a newly added widget
+ * is covered without editing this file.
  */
 class RemoteViewsLayoutGuardTest {
 
@@ -37,8 +40,21 @@ class RemoteViewsLayoutGuardTest {
 
     @Test
     fun widgetLayouts_onlyUseRemoteViewInflatableClasses() {
-        for (name in listOf("widget_detailed_layout.xml", "widget_layout.xml")) {
-            val file = resolveLayout(name)
+        val dir = resolveLayoutDir()
+        val layouts = dir.listFiles { f -> f.isFile && f.name.startsWith("widget") && f.name.endsWith(".xml") }
+            ?.sortedBy { it.name }
+            ?: emptyList()
+
+        assertTrue("no widget* layouts found in ${dir.absolutePath}", layouts.isNotEmpty())
+        val found = layouts.map { it.name }
+        assertTrue(
+            "expected widget layouts missing from ${dir.absolutePath}: found=$found",
+            found.containsAll(
+                listOf("widget_layout.xml", "widget_detailed_layout.xml", "widget_full_layout.xml")
+            )
+        )
+
+        for (file in layouts) {
             val doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(file)
             val elements = doc.getElementsByTagName("*")
 
@@ -49,7 +65,7 @@ class RemoteViewsLayoutGuardTest {
             }
 
             assertTrue(
-                "$name contains classes RemoteViewsInflater cannot inflate: $offenders " +
+                "${file.name} contains classes RemoteViewsInflater cannot inflate: $offenders " +
                     "(file: ${file.absolutePath})",
                 offenders.isEmpty()
             )
@@ -74,15 +90,15 @@ class RemoteViewsLayoutGuardTest {
     }
 
     /** Walks up from the working directory so the test is not tied to one Gradle layout. */
-    private fun resolveLayout(name: String): File {
-        val relative = "src/main/res/layout/$name"
-        val prefixed = "app/src/main/res/layout/$name"
+    private fun resolveLayoutDir(): File {
+        val relative = "src/main/res/layout"
+        val prefixed = "app/$relative"
         var dir: File? = File("").absoluteFile
         while (dir != null) {
-            File(dir, relative).takeIf { it.isFile }?.let { return it }
-            File(dir, prefixed).takeIf { it.isFile }?.let { return it }
+            File(dir, relative).takeIf { it.isDirectory }?.let { return it }
+            File(dir, prefixed).takeIf { it.isDirectory }?.let { return it }
             dir = dir.parentFile
         }
-        throw AssertionError("$name not found from cwd=${File("").absolutePath}")
+        throw AssertionError("res/layout not found from cwd=${File("").absolutePath}")
     }
 }

@@ -38,14 +38,17 @@ class WidgetUpdateWorker(
         val hasDetailed = manager.getAppWidgetIds(
             ComponentName(context, DetailedUsageWidget::class.java)
         ).isNotEmpty()
+        val hasFull = manager.getAppWidgetIds(
+            ComponentName(context, FullUsageWidget::class.java)
+        ).isNotEmpty()
 
-        if (!hasCompact && !hasDetailed) {
+        if (!hasCompact && !hasDetailed && !hasFull) {
             return Result.success()
         }
 
         return try {
-            if (hasDetailed) {
-                // Refresh the pricing table (TTL 6h) so the widget's ≈ estimates follow official
+            if (hasDetailed || hasFull) {
+                // Refresh the pricing table (TTL 6h) so the widgets' ≈ estimates follow official
                 // price changes. Never throws — falls back to the cached/default table.
                 DeepSeekPricing.ensureFresh(context)
             }
@@ -53,16 +56,21 @@ class WidgetUpdateWorker(
             if (hasCompact) {
                 DeepSeekWidget.updateWidgets(context, client.fetchAll())
             }
-            if (hasDetailed) {
-                DetailedUsageWidget.updateWidgets(context, client.fetchDetailedUsage())
+            if (hasDetailed || hasFull) {
+                // One fetch serves both usage widgets (no extra requests).
+                val usage = client.fetchDetailedUsage()
+                if (hasDetailed) DetailedUsageWidget.updateWidgets(context, usage)
+                if (hasFull) FullUsageWidget.updateWidgets(context, usage)
             }
             Result.success()
         } catch (e: Exception) {
             if (hasCompact) {
                 DeepSeekWidget.updateWidgets(context, WidgetDisplayData(error = e.message))
             }
-            if (hasDetailed) {
-                DetailedUsageWidget.updateWidgets(context, DetailedUsageData(error = e.message))
+            if (hasDetailed || hasFull) {
+                val failure = DetailedUsageData(error = e.message)
+                if (hasDetailed) DetailedUsageWidget.updateWidgets(context, failure)
+                if (hasFull) FullUsageWidget.updateWidgets(context, failure)
             }
             Result.retry()
         }

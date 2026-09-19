@@ -1,0 +1,527 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Full Dashboard widget — dark-only, readability-first.
+  Same information set as the Detailed widget, deliberately larger type and looser spacing.
+  No charts. 4×6 recommended; resizable to fill a whole page.
+
+  RemoteViews safety: ONLY @RemoteView classes are used. Dividers and the alignment spacer are
+  FrameLayout (a plain <View>/<Space> makes RemoteViewsInflater reject the whole layout).
+  Every colour is a semantic resource (colors.xml) — no hex literals.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/full_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="@drawable/widget_detailed_bg">
+
+    <!-- Header: title (→ open portal) · updated time · refresh -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/tv_f_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="DeepSeek Usage"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="@color/widget_dark_text_primary"
+            android:includeFontPadding="false"
+            android:singleLine="true"
+            android:ellipsize="end" />
+
+        <TextView
+            android:id="@+id/tv_f_updated"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="--:--"
+            android:textSize="13sp"
+            android:textColor="@color/widget_dark_text_tertiary"
+            android:includeFontPadding="false"
+            android:layout_marginEnd="12dp" />
+
+        <ImageView
+            android:id="@+id/iv_f_refresh"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:src="@drawable/ic_refresh_dark"
+            android:contentDescription="refresh" />
+    </LinearLayout>
+
+    <!-- GONE unless there is a status/error to show -->
+    <TextView
+        android:id="@+id/tv_f_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textSize="13sp"
+        android:textColor="@color/widget_dark_text_tertiary"
+        android:includeFontPadding="false"
+        android:singleLine="true"
+        android:ellipsize="end" />
+
+    <!-- divider (@RemoteView-safe: FrameLayout, never a bare <View>) -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/widget_dark_divider"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="12dp" />
+
+    <!-- Account block: Topped-up balance · Total cost (eyes toggle) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="BALANCE"
+                android:textSize="14sp"
+                android:textColor="@color/widget_dark_text_secondary"
+                android:includeFontPadding="false" />
+
+            <TextView
+                android:id="@+id/tv_f_balance"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="¥--"
+                android:textSize="30sp"
+                android:textStyle="bold"
+                android:textColor="@color/widget_dark_accent"
+                android:includeFontPadding="false"
+                android:singleLine="true" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="TOTAL COST"
+                    android:textSize="14sp"
+                    android:textColor="@color/widget_dark_text_secondary"
+                    android:includeFontPadding="false" />
+
+                <ImageView
+                    android:id="@+id/iv_f_eye"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_marginStart="8dp"
+                    android:src="@drawable/ic_visibility_dark"
+                    android:contentDescription="toggle total cost" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tv_f_total"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="¥••••••"
+                android:textSize="30sp"
+                android:textStyle="bold"
+                android:textColor="@color/widget_dark_text_primary"
+                android:includeFontPadding="false"
+                android:singleLine="true" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Filters: TIME · API KEY (each cycles on tap, state is per-widget) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="18dp">
+
+        <LinearLayout
+            android:id="@+id/row_f_time"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:padding="4dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="TIME"
+                android:textSize="14sp"
+                android:textColor="@color/widget_dark_text_tertiary"
+                android:includeFontPadding="false" />
+
+            <TextView
+                android:id="@+id/tv_f_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Last 7 days"
+                android:textSize="21sp"
+                android:textStyle="bold"
+                android:textColor="@color/widget_dark_text_primary"
+                android:includeFontPadding="false"
+                android:singleLine="true"
+                android:ellipsize="end" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/row_f_key"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:padding="4dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="API KEY"
+                android:textSize="14sp"
+                android:textColor="@color/widget_dark_text_tertiary"
+                android:includeFontPadding="false" />
+
+            <TextView
+                android:id="@+id/tv_f_key"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="All Keys"
+                android:textSize="21sp"
+                android:textStyle="bold"
+                android:textColor="@color/widget_dark_text_primary"
+                android:includeFontPadding="false"
+                android:singleLine="true"
+                android:ellipsize="end" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Filtered metrics (official): COST · REQUESTS · TOKENS -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="18dp">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="COST"
+                android:textSize="14sp"
+                android:textColor="@color/widget_dark_text_tertiary"
+                android:includeFontPadding="false" />
+
+            <TextView
+                android:id="@+id/tv_f_cost"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="¥--"
+                android:textSize="26sp"
+                android:textStyle="bold"
+                android:textColor="@color/widget_dark_accent"
+                android:includeFontPadding="false"
+                android:singleLine="true"
+                android:ellipsize="end" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="REQUESTS"
+                android:textSize="14sp"
+                android:textColor="@color/widget_dark_text_tertiary"
+                android:includeFontPadding="false" />
+
+            <TextView
+                android:id="@+id/tv_f_requests"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="--"
+                android:textSize="26sp"
+                android:textStyle="bold"
+                android:textColor="@color/widget_dark_text_primary"
+                android:includeFontPadding="false"
+                android:singleLine="true"
+                android:ellipsize="end" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="TOKENS"
+                android:textSize="14sp"
+                android:textColor="@color/widget_dark_text_tertiary"
+                android:includeFontPadding="false" />
+
+            <TextView
+                android:id="@+id/tv_f_tokens"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="--"
+                android:textSize="26sp"
+                android:textStyle="bold"
+                android:textColor="@color/widget_dark_text_primary"
+                android:includeFontPadding="false"
+                android:singleLine="true"
+                android:ellipsize="end" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/widget_dark_divider"
+        android:layout_marginTop="18dp"
+        android:layout_marginBottom="12dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="CACHE / BILLING"
+        android:textSize="14sp"
+        android:textColor="@color/widget_dark_text_tertiary"
+        android:includeFontPadding="false" />
+
+    <!-- CACHE HIT -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginTop="10dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="CACHE HIT"
+            android:textSize="16sp"
+            android:textColor="@color/widget_dark_text_secondary"
+            android:includeFontPadding="false" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/tv_f_hit_tok"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="--"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@color/widget_dark_text_primary"
+                android:includeFontPadding="false"
+                android:gravity="start"
+                android:singleLine="true" />
+
+            <TextView
+                android:id="@+id/tv_f_hit_rate"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="--"
+                android:textSize="18sp"
+                android:textColor="@color/widget_dark_text_secondary"
+                android:includeFontPadding="false"
+                android:gravity="center"
+                android:singleLine="true" />
+
+            <TextView
+                android:id="@+id/tv_f_hit_cost"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1.3"
+                android:text="--"
+                android:textSize="19sp"
+                android:textColor="@color/widget_dark_text_secondary"
+                android:includeFontPadding="false"
+                android:gravity="end"
+                android:singleLine="true" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- CACHE MISS -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginTop="12dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="CACHE MISS"
+            android:textSize="16sp"
+            android:textColor="@color/widget_dark_text_secondary"
+            android:includeFontPadding="false" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/tv_f_miss_tok"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="--"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@color/widget_dark_text_primary"
+                android:includeFontPadding="false"
+                android:gravity="start"
+                android:singleLine="true" />
+
+            <TextView
+                android:id="@+id/tv_f_miss_rate"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="--"
+                android:textSize="18sp"
+                android:textColor="@color/widget_dark_text_secondary"
+                android:includeFontPadding="false"
+                android:gravity="center"
+                android:singleLine="true" />
+
+            <TextView
+                android:id="@+id/tv_f_miss_cost"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1.3"
+                android:text="--"
+                android:textSize="19sp"
+                android:textColor="@color/widget_dark_text_secondary"
+                android:includeFontPadding="false"
+                android:gravity="end"
+                android:singleLine="true" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- OUTPUT (no percentage: its denominator would differ from the hit/miss input share) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginTop="12dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="OUTPUT"
+            android:textSize="16sp"
+            android:textColor="@color/widget_dark_text_secondary"
+            android:includeFontPadding="false" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/tv_f_out_tok"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="--"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@color/widget_dark_text_primary"
+                android:includeFontPadding="false"
+                android:gravity="start"
+                android:singleLine="true" />
+
+            <!-- Alignment spacer only — FrameLayout (bare <View> is not @RemoteView) -->
+            <FrameLayout
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/tv_f_out_cost"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1.3"
+                android:text="--"
+                android:textSize="19sp"
+                android:textColor="@color/widget_dark_text_secondary"
+                android:includeFontPadding="false"
+                android:gravity="end"
+                android:singleLine="true" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/widget_dark_divider"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="12dp" />
+
+    <!-- EST. CACHE SAVINGS (counterfactual estimate: hit tokens priced at the miss rate) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="EST. CACHE SAVINGS"
+            android:textSize="16sp"
+            android:textColor="@color/widget_dark_text_tertiary"
+            android:includeFontPadding="false" />
+
+        <TextView
+            android:id="@+id/tv_f_saved"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="--"
+            android:textSize="25sp"
+            android:textStyle="bold"
+            android:textColor="@color/widget_dark_text_primary"
+            android:includeFontPadding="false"
+            android:singleLine="true" />
+    </LinearLayout>
+</LinearLayout>

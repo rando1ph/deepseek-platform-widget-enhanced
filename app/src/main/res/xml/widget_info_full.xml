@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Full Dashboard widget metadata: sized to fill most of a home page, resizable both ways.
+  minWidth/minHeight are kept modest enough that any launcher can place it; targetCell* is a
+  recommendation only (API 31+, ignored on older devices — minSdk is 26).
+  Shares the login config activity with the other two widgets.
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="250dp"
+    android:minHeight="400dp"
+    android:minResizeWidth="200dp"
+    android:minResizeHeight="200dp"
+    android:targetCellWidth="4"
+    android:targetCellHeight="6"
+    android:maxResizeWidth="640dp"
+    android:maxResizeHeight="900dp"
+    android:updatePeriodMillis="1800000"
+    android:configure="com.tiramisu.deepseekwidget.DeepSeekWidgetConfig"
+    android:initialLayout="@layout/widget_full_layout"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen"
+    android:description="@string/widget_full_description" />
